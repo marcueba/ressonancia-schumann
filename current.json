@@ -1,0 +1,37 @@
+{
+    "status": "calm",
+    "score": 38,
+    "stations": 5,
+    "stations_monitored": 6,
+    "regional": false,
+    "data_fallback": false,
+    "summary": "Earth's electromagnetic pulse is currently calm, with a network activity score of 38\/100. The Schumann resonance harmonics are visible as stable, faint lines, indicating a quiet state across most monitoring locations, though some moderate activity is noted in specific regions.",
+    "forecast": "Solar wind conditions are normal with a northward IMF, suggesting a stable period ahead. Geomagnetic activity is expected to remain low, with Kp forecasts indicating a maximum of 3.3 over the next 72 hours, so no significant Schumann resonance intensification is anticipated.",
+    "updated_at": "2026-09-11 21:30:09",
+    "kp_value": 1.67,
+    "kp_text": "Quiet",
+    "trend": "stable",
+    "moon": {
+        "illumination": 0,
+        "phase": "new_moon"
+    },
+    "solar": {
+        "wind_speed": 407,
+        "wind_density": null,
+        "imf_bz": 0,
+        "imf_bt": 1,
+        "flare_m": 10,
+        "flare_x": 1,
+        "kp_forecast_24h": 2.7,
+        "kp_forecast_48h": 3.3,
+        "kp_forecast_72h": 3.3,
+        "flare_now_class": "B3.7",
+        "flare_max_class": "B5.8",
+        "flare_max_time": "2026-09-11 14:03:00",
+        "hp30": 0.67,
+        "hp30_max_24h": 3.67,
+        "hp30_attribution": "Hp30 index \u00a9 GFZ German Research Centre for Geosciences, CC BY 4.0 (doi:10.5880\/Hpo.0002)"
+    },
+    "license": "https:\/\/sungeo.net\/terms#data-license",
+    "attribution": "Data & analysis \u00a9 SunGeo.net \u00b7 Solar wind, flares & Kp: NOAA SWPC (public domain) \u00b7 Hp30 index \u00a9 GFZ German Research Centre for Geosciences, CC BY 4.0 (doi:10.5880\/Hpo.0002)"
+}
