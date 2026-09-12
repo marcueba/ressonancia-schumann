@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 
 export function Dashboard() {
+  const [isLoading, setIsLoading] = useState(true);
   const [current, setCurrent] = useState<CurrentResonanceData | null>(null);
   const [eri, setEri] = useState<EarthResonanceIndex | null>(null);
   const [geo, setGeo] = useState<GeomagneticData | null>(null);
@@ -35,6 +36,8 @@ export function Dashboard() {
         setSolar(s);
       } catch (err) {
         console.error(err);
+      } finally {
+        setIsLoading(false);
       }
     }
     load();
@@ -155,14 +158,22 @@ export function Dashboard() {
             </div>
           </CardHeader>
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-3xl font-light text-text-main mb-1">Kp {geo?.currentKp || '--'}</div>
-              <StatusBadge status={geo?.status || 'Buscando...'} />
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-text-muted">Fonte</div>
-              <div className="text-sm font-medium">{geo?.dataSource || '--'}</div>
-            </div>
+            {isLoading && !geo ? (
+               <div className="text-sm text-text-muted">Buscando...</div>
+            ) : !geo ? (
+               <div className="text-sm text-rose-400">Dados geomagnéticos temporariamente indisponíveis.</div>
+            ) : (
+              <>
+                <div>
+                  <div className="text-3xl font-light text-text-main mb-1">Kp {geo.currentKp ?? '--'}</div>
+                  <StatusBadge status={geo.status} />
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-text-muted">Fonte</div>
+                  <div className="text-sm font-medium">{geo.dataSource || '--'}</div>
+                </div>
+              </>
+            )}
           </div>
         </Card>
 
@@ -174,14 +185,22 @@ export function Dashboard() {
             </div>
           </CardHeader>
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-3xl font-light text-text-main mb-1">Fluxo {solar?.solarFlux || '--'}</div>
-              <StatusBadge status={solar?.status || 'Buscando...'} />
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-text-muted">Fonte</div>
-              <div className="text-sm font-medium">{solar?.dataSource || '--'}</div>
-            </div>
+            {isLoading && !solar ? (
+               <div className="text-sm text-text-muted">Buscando...</div>
+            ) : !solar ? (
+               <div className="text-sm text-rose-400">Dados solares temporariamente indisponíveis.</div>
+            ) : (
+              <>
+                <div>
+                  <div className="text-3xl font-light text-text-main mb-1">Fluxo {solar.solarFlux ?? '--'}</div>
+                  <StatusBadge status={solar.status} />
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-text-muted">Fonte</div>
+                  <div className="text-sm font-medium">{solar.dataSource || '--'}</div>
+                </div>
+              </>
+            )}
           </div>
         </Card>
       </div>

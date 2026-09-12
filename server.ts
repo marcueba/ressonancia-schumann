@@ -135,10 +135,21 @@ async function startServer() {
 
     const formatted = stationsData.map((s, index) => {
       const pResult = stationsStatus[index];
+      let finalStatus = 'online';
+      if (isLive) {
+        if (pResult.success) {
+          finalStatus = 'online';
+        } else if (pResult.error?.includes('pendente') || pResult.error?.includes('indisponível')) {
+          finalStatus = 'indisponível';
+        } else {
+          finalStatus = 'offline';
+        }
+      }
+
       return {
         ...s,
-        status: isLive ? (pResult.success ? 'online' : 'offline') : 'online',
-        quality: isLive ? (pResult.success ? pResult.data?.quality : 'Baixa') : 'Alta',
+        status: finalStatus,
+        quality: isLive ? (pResult.success ? pResult.data?.quality : 'Desconhecida') : 'Alta',
         lastUpdate: pResult.timestamp
       };
     });
@@ -192,6 +203,33 @@ async function startServer() {
     
     const eri = calculateERI(sData, kp);
     res.json(eri);
+  });
+
+  // Placeholder for Correlation (Future implementation)
+  app.get("/api/correlation", (req, res) => {
+    res.status(503).json({
+      success: false,
+      available: false,
+      message: "Dados de correlação ainda não disponíveis nesta versão."
+    });
+  });
+
+  // Placeholder for Heatmap (Future implementation)
+  app.get("/api/heatmap", (req, res) => {
+    res.status(503).json({
+      success: false,
+      available: false,
+      message: "Dados de mapa de calor ainda não disponíveis nesta versão."
+    });
+  });
+
+  // Placeholder for Station Analyses (Future implementation)
+  app.get("/api/station-analyses", (req, res) => {
+    res.status(503).json({
+      success: false,
+      available: false,
+      message: "Análise avançada de estações ainda não disponível nesta versão."
+    });
   });
 
   // History (Simulated for both modes as we don't have DB configured yet)
