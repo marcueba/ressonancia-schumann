@@ -176,18 +176,39 @@ async function startServer() {
   app.get("/api/geomagnetic", async (req, res) => {
     const result = await noaaProvider.getGeomagnetic();
     if (result.success && result.data) {
-      res.json({ ...result.data, dataSource: 'NOAA SWPC' });
+      res.json({
+        success: true,
+        available: true,
+        dataSource: 'NOAA SWPC',
+        timestamp: result.timestamp,
+        ...result.data
+      });
     } else {
-      res.status(503).json({ error: result.error });
+      res.status(503).json({
+        success: false,
+        available: false,
+        message: result.error || "Dados geomagnéticos temporariamente indisponíveis."
+      });
     }
   });
 
   app.get("/api/solar", async (req, res) => {
     const result = await noaaProvider.getSolar();
     if (result.success && result.data) {
-      res.json({ ...result.data, dataSource: 'NOAA SWPC' });
+      res.json({
+        success: true,
+        available: true,
+        dataSource: 'NOAA SWPC',
+        timestamp: result.timestamp,
+        message: result.message,
+        ...result.data
+      });
     } else {
-      res.status(503).json({ error: result.error });
+      res.status(503).json({
+        success: false,
+        available: false,
+        message: result.error || "Dados solares temporariamente indisponíveis."
+      });
     }
   });
 

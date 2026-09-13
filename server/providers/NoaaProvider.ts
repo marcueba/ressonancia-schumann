@@ -8,18 +8,27 @@ export interface GeoData {
 }
 
 export interface SolarData {
-  solarFlux: number;
-  sunspots: number;
-  flares: string;
+  solarFlux: number | null;
+  sunspots: number | null;
+  flares: string | null;
   status: string;
 }
 
 export class NoaaProvider {
   private getStatusFromKp(kp: number): string {
-    if (kp <= 2.66) return 'Calma'; // NOAA standard: <3 is quiet
-    if (kp <= 3.66) return 'Instável'; // 3 is unsettled
-    if (kp <= 4.66) return 'Ativa'; // 4 is active
-    return 'Tempestade Geomagnética'; // >= 5 is storm
+    if (kp <= 2.66) return 'Calma';
+    if (kp <= 3.66) return 'Instável';
+    if (kp <= 4.66) return 'Ativa';
+    return 'Tempestade Geomagnética';
+  }
+
+  // Classificação interna do observatório para fins visuais no Dashboard,
+  // não corresponde a uma escala oficial padronizada pela NOAA.
+  private getStatusFromFlux(flux: number): string {
+    if (flux < 90) return 'Baixa';
+    if (flux < 120) return 'Moderada';
+    if (flux < 160) return 'Elevada';
+    return 'Muito Elevada';
   }
 
   async getGeomagnetic(): Promise<ProviderResponse<GeoData>> {
@@ -34,37 +43,43 @@ export class NoaaProvider {
       };
     }
 
-    const cached = apiCache.get<GeoData>(cacheKey);
+    const cached = apiCache.get<ProviderResponse<GeoData>>(cacheKey);
     if (cached) return cached;
 
     try {
-      // NOAA API endpoint for planetary K-index
       const response = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json');
       if (!response.ok) throw new Error('NOAA API failure');
       
-      const data: string[][] = await response.json();
+      const data: any[] = await response.json();
       
-      // Data is an array of arrays. The first array is headers: ["time_tag", "Kp_index", "a_running"]
-      if (data.length < 2) throw new Error('NOAA returned empty dataset');
+      // The endpoint returns an array of objects: [{"time_tag": "...", "Kp": 2.00, ...}, ...]
+      
+      if (!Array.isArray(data) || data.length === 0) throw new Error('NOAA returned empty dataset');
 
       const recentItems = data.slice(-8); // Last 24h (3-hour intervals)
-      const recentKp = recentItems.map(row => parseFloat(row[1]));
-      const currentKp = recentKp[recentKp.length - 1];
+      const recentKp = recentItems.map(item => parseFloat(item.Kp));
+      const currentKpObj = data[data.length - 1];
+      const currentKp = currentKpObj && currentKpObj.Kp !== undefined ? parseFloat(currentKpObj.Kp) : null;
+
+      if (currentKp === null || isNaN(currentKp)) {
+         throw new Error('Valor Kp indisponível na fonte');
+      }
 
       const geoData: GeoData = {
         currentKp,
-        recentKp,
+        recentKp: recentKp.filter(k => !isNaN(k)),
         status: this.getStatusFromKp(currentKp)
       };
 
-      const result = { success: true, data: geoData, timestamp: new Date().toISOString() };
-      apiCache.set(cacheKey, result, 3600); // Cache for 1 hour
+      const result = { success: true, data: geoData, timestamp: currentKpObj.time_tag || new Date().toISOString() };
+      apiCache.set(cacheKey, result, 3600);
       return result;
 
     } catch (error: any) {
       return {
         success: false,
-        error: `Falha ao buscar dados geomagnéticos: ${error.message}`,
+        available: false,
+        error: `Dados geomagnéticos NOAA temporariamente indisponíveis. (${error.message})`,
         timestamp: new Date().toISOString()
       };
     }
@@ -72,6 +87,8 @@ export class NoaaProvider {
 
   async getSolar(): Promise<ProviderResponse<SolarData>> {
     const isLive = process.env.DATA_MODE === 'live';
+    const cacheKey = 'solar_noaa';
+
     if (!isLive) {
       return {
         success: true,
@@ -80,13 +97,52 @@ export class NoaaProvider {
       };
     }
 
-    // NOAA's simple JSON endpoints for solar are scattered. We will mock a live fallback for solar flux if an exact simple REST endpoint isn't easily parsed here.
-    // For this demonstration, we'll indicate connection pending for solar flux as it requires parsing complex text reports (e.g. SGAS) or specific XMLs.
-    return {
-      success: false,
-      error: 'Conexão pendente. A integração para Fluxo Solar F10.7 e manchas está em desenvolvimento.',
-      timestamp: new Date().toISOString()
-    };
+    const cached = apiCache.get<ProviderResponse<SolarData>>(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const response = await fetch('https://services.swpc.noaa.gov/json/f107_cm_flux.json');
+      if (!response.ok) throw new Error('NOAA API failure for solar flux');
+
+      const data: any[] = await response.json();
+      if (!Array.isArray(data) || data.length === 0) throw new Error('NOAA returned empty solar dataset');
+
+      const validEntries = data.filter(item => item.time_tag && item.flux !== undefined && item.flux !== null);
+      if (validEntries.length === 0) throw new Error('Nenhum registro de fluxo solar válido encontrado');
+
+      validEntries.sort((a, b) => new Date(b.time_tag).getTime() - new Date(a.time_tag).getTime());
+      
+      const latest = validEntries[0];
+      const flux = parseFloat(latest.flux);
+
+      if (isNaN(flux)) {
+         throw new Error('Fluxo solar F10.7 inválido ou indisponível');
+      }
+
+      const solarData: SolarData = {
+        solarFlux: flux,
+        sunspots: null, // "Se um dos indicadores não estiver disponível na fonte, retornar null"
+        flares: null,
+        status: this.getStatusFromFlux(flux)
+      };
+
+      const result = { 
+        success: true, 
+        data: solarData, 
+        timestamp: latest.time_tag || new Date().toISOString(),
+        message: 'Número de manchas solares (sunspots) não disponível neste endpoint REST JSON da NOAA.'
+      };
+      
+      apiCache.set(cacheKey, result, 3600);
+      return result;
+    } catch (error: any) {
+      return {
+        success: false,
+        available: false,
+        error: `Dados solares NOAA temporariamente indisponíveis. (${error.message})`,
+        timestamp: new Date().toISOString()
+      };
+    }
   }
 }
 
