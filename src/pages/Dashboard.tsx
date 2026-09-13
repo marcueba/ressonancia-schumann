@@ -214,7 +214,16 @@ export function Dashboard() {
           <div className="space-y-6">
             <div>
               <div className="font-bold text-text-main mb-2 tracking-wider">SCHUMANN</div>
-              {!current && !isLoading ? (
+              {isLoading ? (
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="text-text-muted">Fonte atual:</span>
+                  <span className="font-medium text-text-main">Carregando...</span>
+                  <span className="text-text-muted">Tipo:</span>
+                  <span className="font-medium text-text-main">Carregando...</span>
+                  <span className="text-text-muted">Medição primária:</span>
+                  <span className="font-medium text-text-main">Carregando...</span>
+                </div>
+              ) : !current ? (
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <span className="text-text-muted">Fonte atual:</span>
                   <span className="font-medium text-rose-400">Nenhuma — fonte ELF primária não conectada</span>
@@ -226,11 +235,15 @@ export function Dashboard() {
               ) : (
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <span className="text-text-muted">Fonte atual:</span>
-                  <span className="font-medium text-text-main">{current?.source_type || (isLoading ? 'Carregando...' : 'MOCK_GENERATOR')}</span>
+                  <span className="font-medium text-text-main">{current.source_type || 'MOCK_GENERATOR'}</span>
                   <span className="text-text-muted">Tipo:</span>
-                  <span className="font-medium text-amber-400">{isLoading ? 'Carregando...' : 'Dados demonstrativos'}</span>
+                  <span className={`font-medium ${current.is_demo ? 'text-amber-400' : 'text-text-main'}`}>
+                    {current.is_demo ? 'Dados demonstrativos' : 'Medição real'}
+                  </span>
                   <span className="text-text-muted">Medição primária:</span>
-                  <span className="font-medium text-text-main">{isLoading ? 'Carregando...' : 'Não'}</span>
+                  <span className="font-medium text-text-main">
+                    {current.is_demo ? 'Não' : 'Sim'}
+                  </span>
                 </div>
               )}
             </div>
