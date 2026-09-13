@@ -18,7 +18,7 @@ export function Stations() {
         <div>
           <h1 className="text-3xl font-light tracking-wide text-text-main mb-2">Estações de Monitoramento</h1>
           <p className="text-text-muted max-w-2xl">
-            Rede global de observatórios responsáveis por registrar o campo eletromagnético da Terra.
+            Estações de referência e monitoramento ELF
           </p>
         </div>
       </div>

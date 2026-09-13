@@ -18,10 +18,10 @@ async function startServer() {
   app.use(express.json());
 
   const stationsData = [
-    { id: "tomsk", name: "Tomsk", country: "Rússia", latitude: 56.4977, longitude: 84.9744, dataSource: "SOSRFF", license: "Educacional / Acadêmica", apiEndpoint: "http://sosrff.tsu.ru/" },
+    { id: "tomsk", name: "Tomsk", country: "Rússia", latitude: 56.4977, longitude: 84.9744, dataSource: "SOSRFF", license: "Não especificada pela fonte", apiEndpoint: "http://sosrff.tsu.ru/" },
     { id: "bgs", name: "BGS Eskdalemuir", country: "Reino Unido", latitude: 55.314, longitude: -3.206, dataSource: "British Geological Survey", license: "OGL", apiEndpoint: "https://geomag.bgs.ac.uk/" },
-    { id: "cumiana", name: "Cumiana", country: "Itália", latitude: 44.9791, longitude: 7.3787, dataSource: "Independent", license: "Desconhecida", apiEndpoint: "" },
-    { id: "etna", name: "ETNA", country: "Itália", latitude: 37.7510, longitude: 14.9934, dataSource: "INGV", license: "CC BY 4.0", apiEndpoint: "" },
+    { id: "cumiana", name: "Cumiana", country: "Itália", latitude: 44.9791, longitude: 7.3787, dataSource: "Renato Romero / VLF.it", license: "Desconhecida", apiEndpoint: "" },
+    { id: "etna", name: "ETNA", country: "Itália", latitude: 37.7510, longitude: 14.9934, dataSource: "INGV / ETNA", license: "Não especificada pela fonte", apiEndpoint: "" },
     { id: "heartmath", name: "HeartMath GCI", country: "EUA (Global)", latitude: 37.1232, longitude: -122.1234, dataSource: "Global Coherence Initiative", license: "Fechada", apiEndpoint: "" }
   ];
 
