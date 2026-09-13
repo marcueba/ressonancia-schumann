@@ -31,7 +31,7 @@ export function CurrentResonance() {
           O sistema está operacional, mas as medições eletromagnéticas ELF primárias ainda não estão conectadas.
         </p>
         <p className="text-text-muted mt-4">
-          A arquitetura está preparada para extrair e processar os modos 1 ao 5 (7.83Hz até 32.4Hz) a partir de espectrogramas e dados estruturados, entretanto nenhuma fonte de dados real-time (como a Sierra Nevada ELF Station ou observatórios equivalentes) está ligada ao pipeline de ingestão atual.
+          A arquitetura está preparada para extrair e processar as faixas de frequência associadas aos cinco primeiros modos de Schumann a partir de espectrogramas e dados estruturados. As frequências nominais teóricas de referência desses modos ficam aproximadamente entre 7,83 Hz e 32,4 Hz, mas nenhuma fonte de dados em tempo real, como a Sierra Nevada ELF Station ou observatório equivalente, está atualmente conectada ao pipeline de ingestão.
         </p>
       </div>
     </div>
