@@ -23,14 +23,14 @@ export function Methodology() {
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <span className="text-text-muted uppercase tracking-wider text-xs">Licença</span>
-              <span>Domínio Público / Educacional</span>
+              <span>Não especificada pela fonte</span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <span className="text-text-muted uppercase tracking-wider text-xs">Link da fonte</span>
               <a href="http://sosrff.tsu.ru" target="_blank" rel="noreferrer" className="text-primary hover:underline">sosrff.tsu.ru</a>
             </div>
             <div className="text-sm text-text-muted mt-2">
-              A estação de Tomsk é uma referência global educacional. Entretanto, ela fornece apenas imagens (espectrogramas visuais) e não oferece uma API de dados numéricos (Hz/pT) estruturados. Portanto, não alimenta numericamente o observatório atual sem o uso de visão computacional.
+              A estação de Tomsk é uma fonte pública de referência visual para o monitoramento de espectrogramas ELF. Entretanto, ela fornece apenas imagens (espectrogramas visuais) e não oferece uma API de dados numéricos (Hz/pT) estruturados. Portanto, não alimenta numericamente o observatório atual sem o uso de visão computacional.
             </div>
           </div>
         </Card>
@@ -51,7 +51,7 @@ export function Methodology() {
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <span className="text-text-muted uppercase tracking-wider text-xs">Link da fonte</span>
-              <a href="#" className="text-primary hover:underline">swpc.noaa.gov</a>
+              <a href="https://www.swpc.noaa.gov/" target="_blank" rel="noreferrer" className="text-primary hover:underline">swpc.noaa.gov</a>
             </div>
           </div>
         </Card>
@@ -72,7 +72,7 @@ export function Methodology() {
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <span className="text-text-muted uppercase tracking-wider text-xs">Link da fonte</span>
-              <a href="#" className="text-primary hover:underline">sdo.gsfc.nasa.gov</a>
+              <a href="https://sdo.gsfc.nasa.gov/" target="_blank" rel="noreferrer" className="text-primary hover:underline">sdo.gsfc.nasa.gov</a>
             </div>
           </div>
         </Card>
@@ -104,7 +104,7 @@ export function Methodology() {
               <span>Fonte agregada/contextual (Score)</span>
             </div>
             <div className="text-sm text-text-muted mt-2">
-              O Score fornecido pela API SunGeo atua como um índice de intensidade eletromagnética, não sendo equivalente à medição da frequência fundamental das Ressonâncias de Schumann (Hz).
+              O Score fornecido pela API SunGeo é um índice agregado/contextual produzido a partir de dados processados pela plataforma. Ele não corresponde diretamente à frequência fundamental da Ressonância de Schumann em Hz nem deve ser interpretado como uma medida física de amplitude em pT.
             </div>
           </div>
         </Card>
@@ -120,7 +120,7 @@ export function Methodology() {
               <span className="text-amber-400">Investigação de Viabilidade</span>
             </div>
             <div className="text-sm text-text-muted mt-2">
-              Os dados de indução eletromagnética da base Eskdalemuir são uma fonte científica futura valiosa. Os experimentos provaram que o canal sísmico comum (GB.ESK.00.HHZ) não deve ser utilizado como medição ELF/Schumann por captar estritamente vibrações mecânicas/antropogênicas em vez do campo eletromagnético.
+              Os dados de indução eletromagnética da base Eskdalemuir são uma fonte científica futura valiosa. Os testes realizados neste projeto mostraram que o canal sísmico GB.ESK.00.HHZ não é apropriado para representar uma medição eletromagnética da Ressonância de Schumann. Por se tratar de um canal sísmico, seus dados não foram incorporados ao pipeline ELF do observatório.
             </div>
           </div>
         </Card>
