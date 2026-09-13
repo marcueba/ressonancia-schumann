@@ -7,12 +7,19 @@ import { Compass } from 'lucide-react';
 
 export function Geomagnetic() {
   const [data, setData] = useState<GeomagneticData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    dataProvider.getGeomagneticData().then(setData).catch(console.error);
+    dataProvider.getGeomagneticData().then(res => {
+      if (!res) setError(true);
+      else setData(res);
+    }).catch(() => setError(true))
+      .finally(() => setIsLoading(false));
   }, []);
 
-  if (!data) return <div className="p-8">Carregando...</div>;
+  if (isLoading) return <div className="p-8">Carregando...</div>;
+  if (error || !data) return <div className="p-8 text-center text-rose-400">Dados geomagnéticos temporariamente indisponíveis.</div>;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
@@ -57,15 +64,23 @@ export function Geomagnetic() {
       <Card className="p-6">
         <h3 className="text-lg font-medium mb-6">Histórico Recente (Últimas 24h)</h3>
         <div className="flex items-end gap-2 h-40">
-          {data.recentKp.map((val, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-2">
+          {data.recentKp.map((item, i) => {
+            const dateStr = item.time ? new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            return (
               <div 
-                className="w-full bg-primary/40 rounded-t-sm transition-all hover:bg-primary/60" 
-                style={{ height: `${(val / 9) * 100}%` }}
-              />
-              <span className="text-xs text-text-muted">{val}</span>
-            </div>
-          ))}
+                key={i} 
+                className="flex-1 flex flex-col items-center gap-2" 
+                title={`Horário: ${dateStr}
+Kp: ${item.kp}`}
+              >
+                <div 
+                  className="w-full bg-primary/40 rounded-t-sm transition-all hover:bg-primary/60" 
+                  style={{ height: `${(item.kp / 9) * 100}%` }}
+                />
+                <span className="text-xs text-text-muted">{item.kp}</span>
+              </div>
+            );
+          })}
         </div>
       </Card>
     </div>

@@ -44,7 +44,7 @@ export interface EarthResonanceIndex {
 
 export interface GeomagneticData {
   currentKp: number;
-  recentKp: number[];
+  recentKp: { time: string; kp: number }[];
   status: string;
   dataSource: string;
 }

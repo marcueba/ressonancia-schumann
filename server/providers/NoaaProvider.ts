@@ -3,7 +3,7 @@ import { apiCache } from '../services/cache';
 
 export interface GeoData {
   currentKp: number;
-  recentKp: number[];
+  recentKp: { time: string; kp: number }[];
   status: string;
 }
 
@@ -38,7 +38,16 @@ export class NoaaProvider {
     if (!isLive) {
       return {
         success: true,
-        data: { currentKp: 3, recentKp: [2, 1, 2, 3, 3, 2, 4, 3], status: 'Instável (DEMO)' },
+        data: { currentKp: 3, recentKp: [
+          { time: new Date(Date.now() - 21*3600000).toISOString(), kp: 2 },
+          { time: new Date(Date.now() - 18*3600000).toISOString(), kp: 1 },
+          { time: new Date(Date.now() - 15*3600000).toISOString(), kp: 2 },
+          { time: new Date(Date.now() - 12*3600000).toISOString(), kp: 3 },
+          { time: new Date(Date.now() - 9*3600000).toISOString(), kp: 3 },
+          { time: new Date(Date.now() - 6*3600000).toISOString(), kp: 2 },
+          { time: new Date(Date.now() - 3*3600000).toISOString(), kp: 4 },
+          { time: new Date().toISOString(), kp: 3 }
+        ], status: 'Instável (DEMO)' },
         timestamp: new Date().toISOString()
       };
     }
@@ -57,7 +66,10 @@ export class NoaaProvider {
       if (!Array.isArray(data) || data.length === 0) throw new Error('NOAA returned empty dataset');
 
       const recentItems = data.slice(-8); // Last 24h (3-hour intervals)
-      const recentKp = recentItems.map(item => parseFloat(item.Kp));
+      const recentKp = recentItems.map(item => ({
+        time: item.time_tag,
+        kp: parseFloat(item.Kp)
+      }));
       const currentKpObj = data[data.length - 1];
       const currentKp = currentKpObj && currentKpObj.Kp !== undefined ? parseFloat(currentKpObj.Kp) : null;
 
@@ -67,7 +79,7 @@ export class NoaaProvider {
 
       const geoData: GeoData = {
         currentKp,
-        recentKp: recentKp.filter(k => !isNaN(k)),
+        recentKp: recentKp.filter(k => !isNaN(k.kp)),
         status: this.getStatusFromKp(currentKp)
       };
 
