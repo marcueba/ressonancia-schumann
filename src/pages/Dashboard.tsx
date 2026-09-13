@@ -73,7 +73,7 @@ export function Dashboard() {
         <Card className="flex flex-col items-center justify-center py-8 text-center bg-surface-hover/20">
           <Activity className="w-8 h-8 text-violet mb-4 opacity-50" />
           <div className="text-4xl font-light text-text-main mb-1 tracking-tight">
-            -- <span className="text-xl text-text-muted">pT</span>
+            --
           </div>
           <div className="text-sm tracking-widest text-text-muted uppercase">Amplitude</div>
         </Card>
