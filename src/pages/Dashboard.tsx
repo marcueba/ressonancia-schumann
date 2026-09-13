@@ -4,15 +4,7 @@ import { CurrentResonanceData, EarthResonanceIndex, GeomagneticData, SolarData }
 import { Card, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Activity, Radio, Sun, Compass, Globe2 } from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
-} from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
@@ -46,18 +38,11 @@ export function Dashboard() {
   }, []);
 
   const spectrumData = current ? [
-    { freq: 0, amp: 0.1 },
-    { freq: 4, amp: 0.2 },
-    { freq: 7.83, amp: current.fundamental.amplitude },
-    { freq: 10, amp: 0.8 },
-    { freq: 14.2, amp: current.mode2.amplitude },
-    { freq: 17, amp: 0.5 },
-    { freq: 20.5, amp: current.mode3.amplitude },
-    { freq: 24, amp: 0.4 },
-    { freq: 26.0, amp: current.mode4.amplitude },
-    { freq: 30, amp: 0.2 },
-    { freq: 33.0, amp: current.mode5.amplitude },
-    { freq: 40, amp: 0.1 },
+    { freq: current.fundamental.frequency, amp: current.fundamental.amplitude, name: 'Modo 1', quality: current.fundamental.quality },
+    { freq: current.mode2.frequency, amp: current.mode2.amplitude, name: 'Modo 2', quality: current.mode2.quality },
+    { freq: current.mode3.frequency, amp: current.mode3.amplitude, name: 'Modo 3', quality: current.mode3.quality },
+    { freq: current.mode4.frequency, amp: current.mode4.amplitude, name: 'Modo 4', quality: current.mode4.quality },
+    { freq: current.mode5.frequency, amp: current.mode5.amplitude, name: 'Modo 5', quality: current.mode5.quality }
   ] : [];
 
   return (
@@ -106,8 +91,8 @@ export function Dashboard() {
 
       <Card className="p-0 overflow-hidden bg-surface-hover/20">
         <div className="p-6 border-b border-border">
-          <CardTitle>Espectro da Ressonância de Schumann</CardTitle>
-          <CardDescription>Visualização da amplitude por frequência.</CardDescription>
+          <CardTitle>Modos Observados</CardTitle>
+          <CardDescription>Frequência e amplitude dos modos observados.</CardDescription>
         </div>
         {!current ? (
           <div className="h-[400px] w-full p-6 flex flex-col items-center justify-center text-center">
@@ -125,25 +110,43 @@ export function Dashboard() {
                </div>
             )}
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={spectrumData}>
-                <defs>
-                  <linearGradient id="colorAmp" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
+              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                <XAxis dataKey="freq" stroke="var(--color-text-muted)" tick={{fill: 'var(--color-text-muted)'}} tickFormatter={(val) => `${val}Hz`} />
-                <YAxis stroke="var(--color-text-muted)" tick={{fill: 'var(--color-text-muted)'}} tickFormatter={(val) => `${val}pT`} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px' }}
-                  itemStyle={{ color: 'var(--color-text-main)' }}
-                  labelStyle={{ color: 'var(--color-text-muted)' }}
-                  formatter={(value: number) => [`${value.toFixed(2)} pT`, 'Amplitude']}
-                  labelFormatter={(label) => `Frequência: ${label} Hz`}
+                <XAxis 
+                  type="number" 
+                  dataKey="freq" 
+                  name="Frequência" 
+                  unit=" Hz" 
+                  stroke="var(--color-text-muted)" 
+                  tick={{fill: 'var(--color-text-muted)'}} 
+                  domain={[0, 40]} 
                 />
-                <Area type="monotone" dataKey="amp" stroke="var(--color-primary)" strokeWidth={2} fillOpacity={1} fill="url(#colorAmp)" />
-              </AreaChart>
+                <YAxis 
+                  type="number" 
+                  dataKey="amp" 
+                  name="Amplitude" 
+                  stroke="var(--color-text-muted)" 
+                  tick={{fill: 'var(--color-text-muted)'}} 
+                />
+                <Tooltip 
+                  cursor={{ strokeDasharray: '3 3' }}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="bg-surface border border-border p-3 rounded-lg shadow-lg">
+                          <p className="font-medium text-text-main mb-1">{data.name}</p>
+                          <p className="text-sm text-text-muted">Frequência: <span className="text-primary">{data.freq.toFixed(2)} Hz</span></p>
+                          <p className="text-sm text-text-muted">Amplitude: <span className="text-text-main">{data.amp.toFixed(2)}</span></p>
+                          <p className="text-sm text-text-muted">Qualidade: <span className="text-text-main">{data.quality}</span></p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Scatter name="Modos" data={spectrumData} fill="var(--color-primary)" />
+              </ScatterChart>
             </ResponsiveContainer>
           </div>
         )}
@@ -235,7 +238,7 @@ export function Dashboard() {
               ) : (
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <span className="text-text-muted">Fonte atual:</span>
-                  <span className="font-medium text-text-main">{current.source_type || 'MOCK_GENERATOR'}</span>
+                  <span className="font-medium text-text-main">{current.source_type || 'Fonte desconhecida'}</span>
                   <span className="text-text-muted">Tipo:</span>
                   <span className={`font-medium ${current.is_demo ? 'text-amber-400' : 'text-text-main'}`}>
                     {current.is_demo ? 'Dados demonstrativos' : 'Medição real'}
