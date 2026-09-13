@@ -214,14 +214,25 @@ export function Dashboard() {
           <div className="space-y-6">
             <div>
               <div className="font-bold text-text-main mb-2 tracking-wider">SCHUMANN</div>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <span className="text-text-muted">Fonte atual:</span>
-                <span className="font-medium text-text-main">{current?.source_type || 'MOCK_GENERATOR'}</span>
-                <span className="text-text-muted">Tipo:</span>
-                <span className="font-medium text-amber-400">Dados demonstrativos</span>
-                <span className="text-text-muted">Medição primária:</span>
-                <span className="font-medium text-text-main">Não</span>
-              </div>
+              {!current && !isLoading ? (
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="text-text-muted">Fonte atual:</span>
+                  <span className="font-medium text-rose-400">Nenhuma — fonte ELF primária não conectada</span>
+                  <span className="text-text-muted">Tipo:</span>
+                  <span className="font-medium text-text-muted">Sem dados de medição</span>
+                  <span className="text-text-muted">Medição primária:</span>
+                  <span className="font-medium text-text-muted">Não disponível</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="text-text-muted">Fonte atual:</span>
+                  <span className="font-medium text-text-main">{current?.source_type || (isLoading ? 'Carregando...' : 'MOCK_GENERATOR')}</span>
+                  <span className="text-text-muted">Tipo:</span>
+                  <span className="font-medium text-amber-400">{isLoading ? 'Carregando...' : 'Dados demonstrativos'}</span>
+                  <span className="text-text-muted">Medição primária:</span>
+                  <span className="font-medium text-text-main">{isLoading ? 'Carregando...' : 'Não'}</span>
+                </div>
+              )}
             </div>
 
             <div>
