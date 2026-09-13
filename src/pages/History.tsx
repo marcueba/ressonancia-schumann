@@ -92,14 +92,16 @@ export function HistoryPage() {
         )}
       </Card>
       
-      <div className="flex justify-end gap-4 pt-4">
-        <button className="px-4 py-2 border border-border rounded-md text-sm text-text-muted hover:text-text-main hover:bg-surface-hover transition-colors">
-          Exportar JSON
-        </button>
-        <button className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-md text-sm hover:bg-primary/20 transition-colors">
-          Exportar CSV
-        </button>
-      </div>
+      {data.length > 0 && (
+        <div className="flex justify-end gap-4 pt-4">
+          <button className="px-4 py-2 border border-border rounded-md text-sm text-text-muted hover:text-text-main hover:bg-surface-hover transition-colors">
+            Exportar JSON
+          </button>
+          <button className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-md text-sm hover:bg-primary/20 transition-colors">
+            Exportar CSV
+          </button>
+        </div>
+      )}
     </div>
   );
 }
