@@ -55,6 +55,7 @@ export interface SolarData {
   flares: string;
   status: string;
   dataSource: string;
+  timestamp: string;
 }
 
 export interface HistoricalDataPoint {
