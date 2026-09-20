@@ -6,8 +6,6 @@ import { tomskProvider, bgsProvider, cumianaProvider, etnaProvider, heartmathPro
 import { noaaProvider } from "./server/providers/NoaaProvider";
 import { calculateERI } from "./server/services/eri";
 import { supabase } from "./server/services/supabase";
-import { sunGeoProvider } from "./server/providers/SunGeoProvider";
-import { normalizeAndPersistSunGeo } from "./server/services/normalizer";
 
 dotenv.config();
 
@@ -76,37 +74,6 @@ async function startServer() {
         success: false,
         error: err.message
       });
-    }
-  });
-
-  // SunGeo Integration Endpoints (Etapa 6)
-  app.get("/api/sungeo/test", async (req, res) => {
-    try {
-      const data = await sunGeoProvider.fetchCurrentData();
-      if (!data) {
-        return res.status(500).json({ success: false, error: 'Failed to fetch SunGeo data' });
-      }
-      res.json({ success: true, data });
-    } catch (err: any) {
-      res.status(500).json({ success: false, error: err.message });
-    }
-  });
-
-  app.get("/api/sungeo/fetch", async (req, res) => {
-    try {
-      const rawData = await sunGeoProvider.fetchCurrentData();
-      if (!rawData) {
-        return res.status(500).json({ success: false, error: 'Failed to fetch SunGeo data' });
-      }
-
-      const normalized = await normalizeAndPersistSunGeo(rawData);
-      if (!normalized) {
-         return res.status(500).json({ success: false, error: 'Failed to normalize and persist' });
-      }
-
-      res.json({ success: true, normalized });
-    } catch (err: any) {
-      res.status(500).json({ success: false, error: err.message });
     }
   });
 
