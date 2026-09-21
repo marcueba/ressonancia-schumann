@@ -28,55 +28,6 @@ async function startServer() {
     res.json({ mode: process.env.DATA_MODE || 'demo' });
   });
 
-  // Test Endpoint for Supabase integration (Etapa 8/9)
-  app.get("/api/test-db", async (req, res) => {
-    try {
-      const testStation = {
-        id: "test-station-01",
-        name: "Station Test API",
-        status: "online",
-        latitude: 0,
-        longitude: 0
-      };
-
-      // 1. Insert
-      const { error: insertError } = await supabase
-        .from('stations')
-        .insert([testStation]);
-        
-      if (insertError) throw new Error(`Erro na inserção: ${insertError.message}`);
-
-      // 2. Select
-      const { data: selectData, error: selectError } = await supabase
-        .from('stations')
-        .select('*')
-        .eq('id', 'test-station-01')
-        .single();
-        
-      if (selectError) throw new Error(`Erro na leitura: ${selectError.message}`);
-
-      // 3. Delete
-      const { error: deleteError } = await supabase
-        .from('stations')
-        .delete()
-        .eq('id', 'test-station-01');
-
-      if (deleteError) throw new Error(`Erro na deleção: ${deleteError.message}`);
-
-      res.json({
-        success: true,
-        message: "Operações de teste concluídas com sucesso (Insert, Select, Delete)",
-        data_read: selectData
-      });
-
-    } catch (err: any) {
-      res.status(500).json({
-        success: false,
-        error: err.message
-      });
-    }
-  });
-
   // Current Schumann Resonance
   app.get("/api/current", async (req, res) => {
     // We try Tomsk as the primary source

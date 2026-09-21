@@ -56,7 +56,14 @@ export class NoaaProvider {
     if (cached) return cached;
 
     try {
-      const response = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json');
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      let response;
+      try {
+        response = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json', { signal: controller.signal });
+      } finally {
+        clearTimeout(timeout);
+      }
       if (!response.ok) throw new Error('NOAA API failure');
       
       const data: any[] = await response.json();
@@ -91,7 +98,7 @@ export class NoaaProvider {
       return {
         success: false,
         available: false,
-        error: `Dados geomagnéticos NOAA temporariamente indisponíveis. (${error.message})`,
+        error: 'Dados geomagnéticos NOAA temporariamente indisponíveis.',
         timestamp: new Date().toISOString()
       };
     }
@@ -113,7 +120,14 @@ export class NoaaProvider {
     if (cached) return cached;
 
     try {
-      const response = await fetch('https://services.swpc.noaa.gov/json/f107_cm_flux.json');
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      let response;
+      try {
+        response = await fetch('https://services.swpc.noaa.gov/json/f107_cm_flux.json', { signal: controller.signal });
+      } finally {
+        clearTimeout(timeout);
+      }
       if (!response.ok) throw new Error('NOAA API failure for solar flux');
 
       const data: any[] = await response.json();
@@ -151,7 +165,7 @@ export class NoaaProvider {
       return {
         success: false,
         available: false,
-        error: `Dados solares NOAA temporariamente indisponíveis. (${error.message})`,
+        error: 'Dados solares NOAA temporariamente indisponíveis.',
         timestamp: new Date().toISOString()
       };
     }
