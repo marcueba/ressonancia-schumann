@@ -1,4 +1,5 @@
 import express from "express";
+import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 import path from "path";
@@ -17,7 +18,53 @@ async function startServer() {
 
   app.use(express.json());
 
+
   app.set('trust proxy', 1);
+
+  app.disable('x-powered-by');
+
+  app.use(helmet({
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "blob:"],
+        fontSrc: ["'self'", "data:"],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        frameAncestors: ["'none'"],
+        formAction: ["'self'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false,
+    frameguard: {
+      action: 'deny',
+    },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: false,
+    },
+    referrerPolicy: {
+      policy: 'strict-origin-when-cross-origin',
+    },
+  }));
+
+  app.use((req, res, next) => {
+    res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    next();
+  });
+
+  app.use('/api', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
+
 
   const apiRateLimiter = rateLimit({
     windowMs: 60 * 1000,
