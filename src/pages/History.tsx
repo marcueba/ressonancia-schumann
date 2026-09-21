@@ -1,3 +1,4 @@
+import { useSEO } from '../hooks/useSEO';
 import { useEffect, useState } from 'react';
 import { dataProvider } from '../data/dataProvider';
 import { HistoricalDataPoint } from '../types';
@@ -14,6 +15,8 @@ import {
 import { format } from 'date-fns';
 
 export function HistoryPage() {
+  useSEO({ title: "Histórico da Ressonância de Schumann | Observatório da Terra", description: "Consulte o histórico disponível de observações relacionadas à Ressonância de Schumann e conheça a origem e as limitações dos dados.", path: "/historico" });
+
   const [data, setData] = useState<HistoricalDataPoint[]>([]);
 
   useEffect(() => {

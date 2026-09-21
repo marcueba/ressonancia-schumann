@@ -1,3 +1,4 @@
+import { useSEO } from '../hooks/useSEO';
 import { useEffect, useState } from 'react';
 import { dataProvider } from '../data/dataProvider';
 import { CurrentResonanceData } from '../types';
@@ -6,6 +7,8 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { Activity } from 'lucide-react';
 
 export function CurrentResonance() {
+  useSEO({ title: "Ressonância de Schumann em Tempo Real | Observatório da Terra", description: "Acompanhe o estado atual do monitoramento da Ressonância de Schumann e conheça os limites e a disponibilidade das fontes ELF utilizadas pelo observatório.", path: "/atual" });
+
   const [data, setData] = useState<CurrentResonanceData | null>(null);
   const [loading, setLoading] = useState(true);
 

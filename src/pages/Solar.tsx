@@ -1,3 +1,4 @@
+import { useSEO } from '../hooks/useSEO';
 import { useEffect, useState } from 'react';
 import { dataProvider } from '../data/dataProvider';
 import { SolarData } from '../types';
@@ -5,6 +6,8 @@ import { Card } from '../components/ui/Card';
 import { Sun } from 'lucide-react';
 
 export function Solar() {
+  useSEO({ title: "Atividade Solar | Observatório da Terra", description: "Acompanhe indicadores de atividade solar utilizados como contexto para o monitoramento da Ressonância de Schumann, com dados do NOAA SWPC.", path: "/solar" });
+
   const [data, setData] = useState<SolarData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);

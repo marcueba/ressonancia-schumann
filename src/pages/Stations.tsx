@@ -1,3 +1,4 @@
+import { useSEO } from '../hooks/useSEO';
 import { useEffect, useState } from 'react';
 import { dataProvider } from '../data/dataProvider';
 import { Station } from '../types';
@@ -6,6 +7,8 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { MapPin } from 'lucide-react';
 
 export function Stations() {
+  useSEO({ title: "Estações de Monitoramento ELF | Observatório da Terra", description: "Conheça as estações e fontes de referência utilizadas no monitoramento ELF e no contexto científico da Ressonância de Schumann.", path: "/estacoes" });
+
   const [stations, setStations] = useState<Station[]>([]);
 
   useEffect(() => {

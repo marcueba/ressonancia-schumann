@@ -1,6 +1,9 @@
+import { useSEO } from '../hooks/useSEO';
 import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 
 export function Methodology() {
+  useSEO({ title: "Metodologia e Fontes de Dados | Observatório da Terra", description: "Conheça as fontes de dados, critérios científicos, processamento, limitações e princípios de transparência utilizados pelo Observatório da Terra.", path: "/metodologia" });
+
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
       <div className="mb-8">

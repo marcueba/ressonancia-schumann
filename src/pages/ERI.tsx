@@ -1,8 +1,11 @@
+import { useSEO } from '../hooks/useSEO';
 import { useEffect, useState } from 'react';
 import { dataProvider } from '../data/dataProvider';
 import { EarthResonanceIndex } from '../types';
 
 export function ERI() {
+  useSEO({ title: "Índice ERI | Ressonância Schumann | Observatório da Terra", description: "Conheça o Índice ERI experimental e os dados geomagnéticos utilizados em sua composição no Observatório da Terra.", path: "/indice" });
+
   const [eriData, setEriData] = useState<EarthResonanceIndex | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 

@@ -1,3 +1,4 @@
+import { useSEO } from '../hooks/useSEO';
 import { useEffect, useState } from 'react';
 import { dataProvider } from '../data/dataProvider';
 import { GeomagneticData } from '../types';
@@ -6,6 +7,8 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { Compass } from 'lucide-react';
 
 export function Geomagnetic() {
+  useSEO({ title: "Atividade Geomagnética | Observatório da Terra", description: "Acompanhe a atividade geomagnética por meio dos dados do NOAA Space Weather Prediction Center e entenda sua relação contextual com a Ressonância de Schumann.", path: "/geomagnetica" });
+
   const [data, setData] = useState<GeomagneticData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);

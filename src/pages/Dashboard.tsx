@@ -1,3 +1,4 @@
+import { useSEO } from '../hooks/useSEO';
 import { useEffect, useState } from 'react';
 import { dataProvider } from '../data/dataProvider';
 import { CurrentResonanceData, EarthResonanceIndex, GeomagneticData, SolarData } from '../types';
@@ -7,6 +8,8 @@ import { Activity, Radio, Sun, Compass, Globe2 } from 'lucide-react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function Dashboard() {
+  useSEO({ title: "Ressonância Schumann | Observatório da Terra", description: "Observatório da Terra dedicado ao monitoramento da Ressonância de Schumann, atividade geomagnética e atividade solar, com transparência sobre fontes e metodologia.", path: "/" });
+
   const [isLoading, setIsLoading] = useState(true);
   const [current, setCurrent] = useState<CurrentResonanceData | null>(null);
   const [eri, setEri] = useState<EarthResonanceIndex | null>(null);

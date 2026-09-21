@@ -254,6 +254,27 @@ async function startServer() {
     res.json(history);
   });
 
+
+  app.get("/robots.txt", (req, res) => {
+    res.type('text/plain');
+    res.send("User-agent: *\nAllow: /\n\nSitemap: https://ressonanciaschumann.com/sitemap.xml");
+  });
+
+  app.get("/sitemap.xml", (req, res) => {
+    res.type('application/xml');
+    res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://ressonanciaschumann.com/</loc></url>
+  <url><loc>https://ressonanciaschumann.com/atual</loc></url>
+  <url><loc>https://ressonanciaschumann.com/historico</loc></url>
+  <url><loc>https://ressonanciaschumann.com/estacoes</loc></url>
+  <url><loc>https://ressonanciaschumann.com/indice</loc></url>
+  <url><loc>https://ressonanciaschumann.com/geomagnetica</loc></url>
+  <url><loc>https://ressonanciaschumann.com/solar</loc></url>
+  <url><loc>https://ressonanciaschumann.com/metodologia</loc></url>
+</urlset>`);
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -263,7 +284,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, { extensions: ['html'] }));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
