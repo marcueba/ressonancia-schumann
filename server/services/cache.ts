@@ -7,6 +7,7 @@ interface CacheEntry<T> {
 
 class CacheManager {
   private cache: Map<string, CacheEntry<any>> = new Map();
+  private inFlight: Map<string, Promise<any>> = new Map();
 
   get<T>(key: string): ProviderResponse<T> | null {
     const entry = this.cache.get(key);
@@ -24,6 +25,26 @@ class CacheManager {
       data: { ...data, cached: false },
       expiresAt: Date.now() + (ttlSeconds * 1000)
     });
+  }
+
+  async resolve<T>(
+    key: string,
+    fetcher: () => Promise<ProviderResponse<T>>
+  ): Promise<ProviderResponse<T>> {
+    const cached = this.get<T>(key);
+    if (cached) return cached;
+
+    const existing = this.inFlight.get(key);
+    if (existing) {
+      return existing;
+    }
+
+    const promise = fetcher().finally(() => {
+      this.inFlight.delete(key);
+    });
+
+    this.inFlight.set(key, promise);
+    return promise;
   }
 }
 

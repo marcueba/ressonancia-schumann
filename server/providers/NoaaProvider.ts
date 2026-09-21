@@ -52,10 +52,8 @@ export class NoaaProvider {
       };
     }
 
-    const cached = apiCache.get<ProviderResponse<GeoData>>(cacheKey);
-    if (cached) return cached;
-
-    try {
+    return apiCache.resolve(cacheKey, async () => {
+      try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000);
       let response;
@@ -102,6 +100,7 @@ export class NoaaProvider {
         timestamp: new Date().toISOString()
       };
     }
+    });
   }
 
   async getSolar(): Promise<ProviderResponse<SolarData>> {
@@ -116,10 +115,8 @@ export class NoaaProvider {
       };
     }
 
-    const cached = apiCache.get<ProviderResponse<SolarData>>(cacheKey);
-    if (cached) return cached;
-
-    try {
+    return apiCache.resolve(cacheKey, async () => {
+      try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000);
       let response;
@@ -169,6 +166,7 @@ export class NoaaProvider {
         timestamp: new Date().toISOString()
       };
     }
+    });
   }
 }
 

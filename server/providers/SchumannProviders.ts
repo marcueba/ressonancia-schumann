@@ -39,19 +39,18 @@ export class SchumannProvider {
     }
 
     // DEMO mode
-    const cached = apiCache.get<NormalizedSchumannData>(cacheKey);
-    if (cached) return cached;
+    return apiCache.resolve(cacheKey, async () => {
+      const data = generateMockSchumann(this.stationId);
+      const response: ProviderResponse<NormalizedSchumannData> = {
+        success: true,
+        data,
+        timestamp: data.timestamp
+      };
 
-    const data = generateMockSchumann(this.stationId);
-    const response: ProviderResponse<NormalizedSchumannData> = {
-      success: true,
-      data,
-      timestamp: data.timestamp
-    };
-    
-    // Cache for 1 minute in demo mode
-    apiCache.set(cacheKey, response, 60);
-    return response;
+      // Cache for 1 minute in demo mode
+      apiCache.set(cacheKey, response, 60);
+      return response;
+    });
   }
 }
 
