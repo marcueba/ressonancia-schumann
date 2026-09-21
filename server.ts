@@ -8,7 +8,6 @@ import * as dotenv from 'dotenv';
 import { tomskProvider, bgsProvider, cumianaProvider, etnaProvider, heartmathProvider } from "./server/providers/SchumannProviders";
 import { noaaProvider } from "./server/providers/NoaaProvider";
 import { calculateERI } from "./server/services/eri";
-import { supabase } from "./server/services/supabase";
 
 dotenv.config();
 
