@@ -1,4 +1,6 @@
 import express from "express";
+import rateLimit from 'express-rate-limit';
+
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import * as dotenv from 'dotenv';
@@ -14,6 +16,24 @@ async function startServer() {
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   app.use(express.json());
+
+  app.set('trust proxy', 1);
+
+  const apiRateLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+      res.status(429).json({
+        success: false,
+        message: "Muitas requisições. Aguarde um momento e tente novamente."
+      });
+    }
+  });
+
+  app.use('/api', apiRateLimiter);
+
 
   const stationsData = [
     { id: "tomsk", name: "Tomsk", country: "Rússia", latitude: 56.4977, longitude: 84.9744, dataSource: "SOSRFF", license: "Não especificada pela fonte", apiEndpoint: "http://sosrff.tsu.ru/" },
