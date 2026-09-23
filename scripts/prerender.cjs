@@ -1,14 +1,81 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
+const os = require('os');
 
 const ROUTES = ['/', '/atual', '/historico', '/estacoes', '/indice', '/geomagnetica', '/solar', '/metodologia'];
 const PORT = process.env.PRERENDER_PORT || 8999;
 
+async function getBrowserConfig() {
+  const platform = os.platform();
+
+  if (platform === 'linux') {
+    console.log('[Puppeteer] Plataforma Linux detectada. Utilizando @sparticuz/chromium...');
+    // Dependendo de onde/como importamos, sparticuz tem export default
+    let chromium;
+    try {
+      chromium = require('@sparticuz/chromium').default || require('@sparticuz/chromium');
+    } catch (e) {
+      throw new Error(`Falha ao carregar @sparticuz/chromium no Linux: ${e.message}`);
+    }
+    
+    return {
+      executablePath: await chromium.executablePath(),
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      headless: chromium.headless,
+    };
+  }
+
+  console.log(`[Puppeteer] Plataforma ${platform} detectada. Buscando executável Chromium/Chrome local...`);
+
+  let executablePath = null;
+
+  if (platform === 'darwin') {
+    const macPaths = [
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      '/Applications/Chromium.app/Contents/MacOS/Chromium',
+      '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary'
+    ];
+    for (const p of macPaths) {
+      if (fs.existsSync(p)) {
+        executablePath = p;
+        break;
+      }
+    }
+  }
+
+  // Fallback via terminal para qualquer sistema
+  if (!executablePath) {
+    try {
+      const whichCmd = platform === 'win32' ? 'where chrome' : 'which google-chrome';
+      const p = execSync(whichCmd, { stdio: 'pipe' }).toString().trim();
+      if (p && fs.existsSync(p)) executablePath = p;
+    } catch (e) {
+      try {
+        const whichChromium = platform === 'win32' ? 'where chromium' : 'which chromium';
+        const p = execSync(whichChromium, { stdio: 'pipe' }).toString().trim();
+        if (p && fs.existsSync(p)) executablePath = p;
+      } catch (e2) {}
+    }
+  }
+
+  if (!executablePath) {
+    throw new Error(`Nenhum navegador Chrome/Chromium encontrado localmente para a plataforma ${platform}. Instale o Chrome para utilizar o prerender localmente.`);
+  }
+
+  console.log(`[Puppeteer] Executável encontrado em: ${executablePath}`);
+  
+  return {
+    executablePath,
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  };
+}
+
 async function startServer() {
   return new Promise((resolve, reject) => {
-    // Run the production bundle
     const server = spawn(process.execPath, ['dist/server.cjs'], {
       env: { ...process.env, NODE_ENV: 'production', DATA_MODE: 'live', PORT: PORT.toString() },
     });
@@ -17,7 +84,9 @@ async function startServer() {
 
     server.stdout.on('data', (data) => {
       const msg = data.toString();
-      console.log(`[Server]: ${msg.trim()}`);
+      if (!msg.includes('injected env')) {
+         console.log(`[Server]: ${msg.trim()}`);
+      }
       if (msg.includes('Server running on port')) {
         started = true;
         resolve(server);
@@ -45,8 +114,11 @@ async function startServer() {
     console.log(`\nStarting temporary server on port ${PORT}...`);
     serverProcess = await startServer();
 
+    console.log('Resolvendo configuração do browser...');
+    const browserConfig = await getBrowserConfig();
+
     console.log('Starting Puppeteer...');
-    browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
+    browser = await puppeteer.launch(browserConfig);
     const distDir = path.join(__dirname, '../dist');
 
     for (const route of ROUTES) {
@@ -55,7 +127,6 @@ async function startServer() {
       
       page.on('console', msg => {
         if (msg.type() === 'error' && !msg.text().includes('favicon.ico')) {
-           // Ignorar erro do CSP gerado por Vite e ignorar 404 do favicon
            if (!msg.text().includes('Content Security Policy')) {
              console.log(`[Prerender Browser Warning ${route}]:`, msg.text());
            }
@@ -69,9 +140,9 @@ async function startServer() {
         throw new Error(`Failed to load ${url}: Status ${response.status()}`);
       }
 
-      // Esperar o hook useSEO finalizar
       await page.waitForSelector('link[rel="canonical"]', { timeout: 10000 });
       await new Promise(r => setTimeout(r, 1000));
+
       const html = await page.evaluate(() => {
         return '<!doctype html>\n' + document.documentElement.outerHTML;
       });
