@@ -33,7 +33,7 @@ export function Methodology() {
               <a href="http://sosrff.tsu.ru" target="_blank" rel="noreferrer" className="text-primary hover:underline">sosrff.tsu.ru</a>
             </div>
             <div className="text-sm text-text-muted mt-2">
-              A estação de Tomsk é uma fonte pública de referência visual para o monitoramento de espectrogramas ELF. Entretanto, ela fornece apenas imagens (espectrogramas visuais) e não oferece uma API de dados numéricos (Hz/pT) estruturados. Portanto, não alimenta numericamente o observatório atual sem o uso de visão computacional.
+              A estação de Tomsk é uma fonte pública de referência visual para o monitoramento de espectrogramas ELF. O observatório utiliza frequências derivadas por algoritmos de extração de cor e brilho processados sobre essas imagens (o PoC interno demonstrou viabilidade técnica de extração aproximada e concordância parcial com a implementação externa, mas não constitui calibração ou validação instrumental e processados em JSON secundário por "Ressonância Schumann Hoje"). Portanto, o valor apresentado é uma observação derivada e não uma medição instrumental bruta em pT (que inexiste publicamente na fonte original).
             </div>
           </div>
         </Card>
@@ -96,21 +96,7 @@ export function Methodology() {
           </div>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle as="h2">SunGeo</CardTitle>
-            <CardDescription>Agregação de Dados Espaciais</CardDescription>
-          </CardHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <span className="text-text-muted uppercase tracking-wider text-xs">Tipo de dado</span>
-              <span>Fonte agregada/contextual (Score)</span>
-            </div>
-            <div className="text-sm text-text-muted mt-2">
-              O Score fornecido pela API SunGeo é um índice agregado/contextual produzido a partir de dados processados pela plataforma. Ele não corresponde diretamente à frequência fundamental da Ressonância de Schumann em Hz nem deve ser interpretado como uma medida física de amplitude em pT.
-            </div>
-          </div>
-        </Card>
+        
 
         <Card>
           <CardHeader>

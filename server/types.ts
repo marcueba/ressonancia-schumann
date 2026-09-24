@@ -2,11 +2,11 @@
 export interface NormalizedSchumannData {
   stationId: string;
   timestamp: string; // ISO string
-  fundamental: { frequency: number; amplitude: number; quality: string };
-  mode2: { frequency: number; amplitude: number; quality: string };
-  mode3: { frequency: number; amplitude: number; quality: string };
-  mode4: { frequency: number; amplitude: number; quality: string };
-  mode5: { frequency: number; amplitude: number; quality: string };
+  fundamental: { frequency: number | null; amplitude: number | null; quality: string };
+  mode2: { frequency: number | null; amplitude: number | null; quality: string };
+  mode3: { frequency: number | null; amplitude: number | null; quality: string };
+  mode4: { frequency: number | null; amplitude: number | null; quality: string };
+  mode5: { frequency: number | null; amplitude: number | null; quality: string };
   quality: string;
   source: string;
   source_url?: string;

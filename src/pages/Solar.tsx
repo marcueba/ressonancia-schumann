@@ -33,7 +33,7 @@ export function Solar() {
   }
 
   if (error || !data) {
-    return <div className="p-8 text-rose-400">Dados solares temporariamente indisponíveis.</div>;
+    return <div className="p-8 text-rose-400">Não foi possível atualizar os dados neste momento.</div>;
   }
 
   return (
@@ -49,20 +49,20 @@ export function Solar() {
         <Card className="flex flex-col items-center justify-center py-10 px-4 text-center">
           <Sun className="w-10 h-10 text-gold mb-6 opacity-80" />
           <div className="text-sm tracking-widest text-text-muted uppercase mb-2">Fluxo de rádio solar F10.7</div>
-          <div className="text-5xl font-light text-text-main mb-4">{data.solarFlux != null ? `${data.solarFlux} sfu` : 'Não disponível'}</div>
+          <div className="text-5xl font-light text-text-main mb-4">{data.solarFlux != null && `${data.solarFlux} sfu`}</div>
           <p className="text-xs text-text-muted mt-2">Fluxo de rádio solar medido em 10,7 cm (F10.7), utilizado como indicador de atividade solar.</p>
         </Card>
 
         <Card className="flex flex-col items-center justify-center py-10 px-4 text-center">
-          <div className="text-sm tracking-widest text-text-muted uppercase mb-2">Manchas Solares</div>
-          <div className="text-3xl md:text-5xl font-light text-text-main mb-4">Não disponível</div>
-          <p className="text-xs text-text-muted mt-2">Não fornecido pelo endpoint solar atualmente utilizado.</p>
+          <div className="text-sm tracking-widest text-text-muted uppercase mb-2">Regiões Solares Ativas</div>
+          <div className="text-3xl md:text-5xl font-light text-text-main mb-4">{data.sunspots != null ? data.sunspots : <span className="text-xl text-rose-400">Dados ausentes na fonte</span>}</div>
+          <p className="text-xs text-text-muted mt-2">Quantidade de regiões ativas observadas atualmente.</p>
         </Card>
 
         <Card className="flex flex-col items-center justify-center py-10 px-4 text-center">
           <div className="text-sm tracking-widest text-text-muted uppercase mb-2">Flares Recentes</div>
-          <div className="text-3xl md:text-5xl font-light text-primary mb-4">Não disponível</div>
-          <p className="text-xs text-text-muted mt-2">Não fornecido pelo endpoint solar atualmente utilizado.</p>
+          <div className="text-3xl md:text-4xl font-light text-primary mb-4">{data.flares || <span className="text-xl text-rose-400">Dados ausentes na fonte</span>}</div>
+          <p className="text-xs text-text-muted mt-2">Maior ou mais recente evento de Raio-X monitorado.</p>
         </Card>
       </div>
       

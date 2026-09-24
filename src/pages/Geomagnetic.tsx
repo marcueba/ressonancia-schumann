@@ -22,7 +22,7 @@ export function Geomagnetic() {
   }, []);
 
   if (isLoading) return <div className="p-8">Carregando...</div>;
-  if (error || !data) return <div className="p-8 text-center text-rose-400">Dados geomagnéticos temporariamente indisponíveis.</div>;
+  if (error || !data) return <div className="p-8 text-center text-rose-400">Não foi possível atualizar os dados neste momento.</div>;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
@@ -72,7 +72,7 @@ export function Geomagnetic() {
         <div className="flex items-end gap-1 sm:gap-2 h-48 pt-8">
           {data.recentKp.map((item, i) => {
             const dateObj = item.time ? new Date(item.time) : null;
-            const timeStr = dateObj ? dateObj.toLocaleTimeString('pt-BR', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit' }) : '--:--';
+            const timeStr = dateObj ? dateObj.toLocaleTimeString('pt-BR', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit' }) : 'Hora desconhecida';
             
             return (
               <div 

@@ -239,20 +239,63 @@ async function startServer() {
   });
 
   // History (Simulated for both modes as we don't have DB configured yet)
-  app.get("/api/history", (req, res) => {
+  app.get("/api/history", async (req, res) => {
+    // 5. Histórico da API
+    // O endpoint lê NOSSO Supabase e possui ranges predefinidos para segurança.
+    const allowedRanges = ['24h', '7d', '30d', '90d', '1y'];
+    const range = req.query.range as string || '24h';
+    
+    if (!allowedRanges.includes(range)) {
+      return res.status(400).json({ error: "Invalid range" });
+    }
+
     if (process.env.DATA_MODE === 'live') {
-      return res.json([]);
+      if (process.env.PRERENDER === 'true') {
+        return res.json([]);
+      }
+      let supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+      if (supabaseUrl && !supabaseUrl.startsWith('http')) {
+        supabaseUrl = `https://${supabaseUrl}.supabase.co`;
+      }
+      const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+      
+      // We can use anon key here since reading might be public, or service key if RLS blocks read.
+      // Assuming RLS allows read for anon, but we'll use service key if needed to ensure it works for now.
+      const keyToUse = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
+      
+      if (!supabaseUrl || !keyToUse) {
+        return res.json([]);
+      }
+      
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, keyToUse);
+      
+      let msRange = 24 * 3600 * 1000;
+      if (range === '7d') msRange = 7 * 24 * 3600 * 1000;
+      if (range === '30d') msRange = 30 * 24 * 3600 * 1000;
+      if (range === '90d') msRange = 90 * 24 * 3600 * 1000;
+      if (range === '1y') msRange = 365 * 24 * 3600 * 1000;
+      
+      const { data, error } = await supabase
+         .from('measurements')
+         .select('timestamp, f1_hz, f2_hz')
+         .gte('timestamp', new Date(Date.now() - msRange).toISOString())
+         .order('timestamp', { ascending: true });
+         
+      if (error) {
+        console.error('[API History] Error fetching data:', error);
+        return res.status(500).json({ error: "Failed to fetch history" });
+      }
+      
+      return res.json(data.map(row => ({ 
+        time: row.timestamp, 
+        frequency: row.f1_hz,
+        f2: row.f2_hz 
+      })));
     }
-    const history = [];
-    const now = Date.now();
-    for (let i = 24; i >= 0; i--) {
-      history.push({
-        time: new Date(now - i * 3600000).toISOString(),
-        frequency: 7.8 + Math.random() * 0.1,
-        amplitude: 2.5 + Math.random() * 2.0,
-      });
-    }
-    res.json(history);
+    
+    // MOCK DATA (Apenas se DATA_MODE=demo)
+    return res.json([]);
   });
 
 

@@ -22,8 +22,6 @@ export class NoaaProvider {
     return 'Tempestade Geomagnética';
   }
 
-  // Classificação interna do observatório para fins visuais no Dashboard,
-  // não corresponde a uma escala oficial padronizada pela NOAA.
   private getStatusFromFlux(flux: number): string {
     if (flux < 90) return 'Baixa';
     if (flux < 120) return 'Moderada';
@@ -54,52 +52,50 @@ export class NoaaProvider {
 
     return apiCache.resolve(cacheKey, async () => {
       try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
-      let response;
-      try {
-        response = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json', { signal: controller.signal });
-      } finally {
-        clearTimeout(timeout);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        let response;
+        try {
+          response = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json', { signal: controller.signal });
+        } finally {
+          clearTimeout(timeout);
+        }
+        if (!response.ok) throw new Error('NOAA API failure');
+        
+        const data: any[] = await response.json();
+        
+        if (!Array.isArray(data) || data.length === 0) throw new Error('NOAA returned empty dataset');
+
+        const recentItems = data.slice(-8);
+        const recentKp = recentItems.map(item => ({
+          time: item.time_tag,
+          kp: parseFloat(item.Kp)
+        }));
+        const currentKpObj = data[data.length - 1];
+        const currentKp = currentKpObj && currentKpObj.Kp !== undefined ? parseFloat(currentKpObj.Kp) : null;
+
+        if (currentKp === null || isNaN(currentKp)) {
+           throw new Error('Valor Kp indisponível na fonte');
+        }
+
+        const geoData: GeoData = {
+          currentKp,
+          recentKp: recentKp.filter(k => !isNaN(k.kp)),
+          status: this.getStatusFromKp(currentKp)
+        };
+
+        const result = { success: true, data: geoData, timestamp: currentKpObj.time_tag || new Date().toISOString() };
+        apiCache.set(cacheKey, result, 3600);
+        return result;
+
+      } catch (error: any) {
+        return {
+          success: false,
+          available: false,
+          error: 'Dados geomagnéticos NOAA temporariamente indisponíveis.',
+          timestamp: new Date().toISOString()
+        };
       }
-      if (!response.ok) throw new Error('NOAA API failure');
-      
-      const data: any[] = await response.json();
-      
-      // The endpoint returns an array of objects: [{"time_tag": "...", "Kp": 2.00, ...}, ...]
-      
-      if (!Array.isArray(data) || data.length === 0) throw new Error('NOAA returned empty dataset');
-
-      const recentItems = data.slice(-8); // Last 24h (3-hour intervals)
-      const recentKp = recentItems.map(item => ({
-        time: item.time_tag,
-        kp: parseFloat(item.Kp)
-      }));
-      const currentKpObj = data[data.length - 1];
-      const currentKp = currentKpObj && currentKpObj.Kp !== undefined ? parseFloat(currentKpObj.Kp) : null;
-
-      if (currentKp === null || isNaN(currentKp)) {
-         throw new Error('Valor Kp indisponível na fonte');
-      }
-
-      const geoData: GeoData = {
-        currentKp,
-        recentKp: recentKp.filter(k => !isNaN(k.kp)),
-        status: this.getStatusFromKp(currentKp)
-      };
-
-      const result = { success: true, data: geoData, timestamp: currentKpObj.time_tag || new Date().toISOString() };
-      apiCache.set(cacheKey, result, 3600);
-      return result;
-
-    } catch (error: any) {
-      return {
-        success: false,
-        available: false,
-        error: 'Dados geomagnéticos NOAA temporariamente indisponíveis.',
-        timestamp: new Date().toISOString()
-      };
-    }
     });
   }
 
@@ -117,55 +113,76 @@ export class NoaaProvider {
 
     return apiCache.resolve(cacheKey, async () => {
       try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
-      let response;
-      try {
-        response = await fetch('https://services.swpc.noaa.gov/json/f107_cm_flux.json', { signal: controller.signal });
-      } finally {
-        clearTimeout(timeout);
+        // Fetch Flux
+        const resFlux = await fetch('https://services.swpc.noaa.gov/json/f107_cm_flux.json');
+        if (!resFlux.ok) throw new Error('NOAA API failure for solar flux');
+        const dataFlux: any[] = await resFlux.json();
+        const validFlux = dataFlux.filter(item => item.time_tag && item.flux !== undefined && item.flux !== null);
+        validFlux.sort((a, b) => new Date(b.time_tag).getTime() - new Date(a.time_tag).getTime());
+        const flux = validFlux.length > 0 ? parseFloat(validFlux[0].flux) : null;
+
+        // Fetch Regions (using as proxy for active sunspot regions)
+        let sunspots = null;
+        try {
+          const resRegions = await fetch('https://services.swpc.noaa.gov/json/solar_regions.json');
+          if (resRegions.ok) {
+            const dataRegions: any[] = await resRegions.json();
+            // Count regions from the latest observed_date
+            if (dataRegions.length > 0) {
+              const latestDate = dataRegions[dataRegions.length - 1].observed_date;
+              const currentRegions = dataRegions.filter(r => r.observed_date === latestDate);
+              sunspots = currentRegions.length; // We use region count
+            }
+          }
+        } catch(e) {
+          console.warn("NOAA solar_regions fetch failed", e);
+        }
+
+        // Fetch Flares
+        let flares = null;
+        try {
+          const resFlares = await fetch('https://services.swpc.noaa.gov/json/edited_events.json');
+          if (resFlares.ok) {
+            const dataFlares: any[] = await resFlares.json();
+            const xraEvents = dataFlares.filter(ev => ev.type === 'XRA');
+            if (xraEvents.length > 0) {
+              const latestEvent = xraEvents[xraEvents.length - 1];
+              flares = latestEvent.particulars1 || "Recente";
+            } else {
+              flares = "Nenhum flare XRA recente no período monitorado";
+            }
+          }
+        } catch(e) {
+          console.warn("NOAA flares fetch failed", e);
+        }
+
+        if (flux === null || isNaN(flux)) {
+           throw new Error('Fluxo solar F10.7 inválido ou indisponível');
+        }
+
+        const solarData: SolarData = {
+          solarFlux: flux,
+          sunspots: sunspots,
+          flares: flares,
+          status: this.getStatusFromFlux(flux)
+        };
+
+        const result = { 
+          success: true, 
+          data: solarData, 
+          timestamp: validFlux[0].time_tag || new Date().toISOString()
+        };
+        
+        apiCache.set(cacheKey, result, 3600);
+        return result;
+      } catch (error: any) {
+        return {
+          success: false,
+          available: false,
+          error: 'Dados solares NOAA temporariamente indisponíveis.',
+          timestamp: new Date().toISOString()
+        };
       }
-      if (!response.ok) throw new Error('NOAA API failure for solar flux');
-
-      const data: any[] = await response.json();
-      if (!Array.isArray(data) || data.length === 0) throw new Error('NOAA returned empty solar dataset');
-
-      const validEntries = data.filter(item => item.time_tag && item.flux !== undefined && item.flux !== null);
-      if (validEntries.length === 0) throw new Error('Nenhum registro de fluxo solar válido encontrado');
-
-      validEntries.sort((a, b) => new Date(b.time_tag).getTime() - new Date(a.time_tag).getTime());
-      
-      const latest = validEntries[0];
-      const flux = parseFloat(latest.flux);
-
-      if (isNaN(flux)) {
-         throw new Error('Fluxo solar F10.7 inválido ou indisponível');
-      }
-
-      const solarData: SolarData = {
-        solarFlux: flux,
-        sunspots: null, // "Se um dos indicadores não estiver disponível na fonte, retornar null"
-        flares: null,
-        status: this.getStatusFromFlux(flux)
-      };
-
-      const result = { 
-        success: true, 
-        data: solarData, 
-        timestamp: latest.time_tag || new Date().toISOString(),
-        message: 'Número de manchas solares (sunspots) não disponível neste endpoint REST JSON da NOAA.'
-      };
-      
-      apiCache.set(cacheKey, result, 3600);
-      return result;
-    } catch (error: any) {
-      return {
-        success: false,
-        available: false,
-        error: 'Dados solares NOAA temporariamente indisponíveis.',
-        timestamp: new Date().toISOString()
-      };
-    }
     });
   }
 }

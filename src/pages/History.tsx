@@ -41,10 +41,10 @@ export function HistoryPage() {
       </div>
 
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {['24h', '7 dias', '30 dias', '90 dias', '1 ano'].map((filter, i) => (
+        {['24h'].map((filter, i) => (
           <button 
             key={filter}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${i === 0 ? 'bg-primary text-background' : 'bg-surface border border-border text-text-muted hover:text-text-main'}`}
+            className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors bg-primary text-background`}
           >
             {filter}
           </button>
@@ -53,14 +53,14 @@ export function HistoryPage() {
 
       <Card className="p-0 overflow-hidden">
         <div className="p-6 border-b border-border">
-          <CardTitle as="h2">Variação da Amplitude (24h)</CardTitle>
-          <CardDescription>Estação Principal</CardDescription>
+          <CardTitle as="h2">Variação da Frequência Fundamental (24h)</CardTitle>
+          <CardDescription>Observação derivada</CardDescription>
         </div>
         {data.length === 0 ? (
           <div className="h-[400px] w-full p-6 flex flex-col items-center justify-center text-center">
-            <h2 className="text-xl font-medium text-text-main mb-2">Histórico ELF indisponível</h2>
+            <h2 className="text-xl font-medium text-text-main mb-2">Construindo histórico</h2>
             <p className="text-text-muted max-w-lg">
-              Sem uma fonte ELF conectada, os registros estruturados do espectrograma não estão sendo salvos no momento.
+              O histórico será formado a partir das observações registradas pelo Observatório.
             </p>
           </div>
         ) : (
@@ -78,7 +78,7 @@ export function HistoryPage() {
                 <YAxis 
                   stroke="var(--color-text-muted)" 
                   tick={{fill: 'var(--color-text-muted)', fontSize: 12}}
-                  tickFormatter={(val) => `${val}pT`}
+                  tickFormatter={(val) => `${val} Hz`}
                   domain={['dataMin - 1', 'dataMax + 1']}
                 />
                 <Tooltip 
@@ -86,9 +86,9 @@ export function HistoryPage() {
                   itemStyle={{ color: 'var(--color-text-main)' }}
                   labelStyle={{ color: 'var(--color-text-muted)' }}
                   labelFormatter={(label) => `Horário: ${formatDate(label)}`}
-                  formatter={(value: number) => [`${value.toFixed(2)} pT`, 'Amplitude']}
+                  formatter={(value: number) => [`${value.toFixed(2)} Hz`, 'Frequência (Hz)']}
                 />
-                <Line type="monotone" dataKey="amplitude" stroke="var(--color-violet)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="frequency" stroke="var(--color-violet)" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>

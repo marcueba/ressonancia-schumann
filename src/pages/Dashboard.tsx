@@ -40,13 +40,7 @@ export function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const spectrumData = current ? [
-    { freq: current.fundamental.frequency, amp: current.fundamental.amplitude, name: 'Modo 1', quality: current.fundamental.quality },
-    { freq: current.mode2.frequency, amp: current.mode2.amplitude, name: 'Modo 2', quality: current.mode2.quality },
-    { freq: current.mode3.frequency, amp: current.mode3.amplitude, name: 'Modo 3', quality: current.mode3.quality },
-    { freq: current.mode4.frequency, amp: current.mode4.amplitude, name: 'Modo 4', quality: current.mode4.quality },
-    { freq: current.mode5.frequency, amp: current.mode5.amplitude, name: 'Modo 5', quality: current.mode5.quality }
-  ] : [];
+  
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -85,7 +79,7 @@ export function Dashboard() {
           <div className="absolute top-0 left-0 w-full h-1 bg-gold/40" />
           <Globe2 className="w-8 h-8 text-gold mb-4" />
           <div className="text-4xl font-light text-text-main mb-1 tracking-tight flex items-baseline gap-1">
-            {eri ? eri.score : '--'} <span className="text-xl text-text-muted">/100</span>
+            {eri ? eri.score : <span className="text-xl text-text-muted">Não calculado</span>} {eri && <span className="text-xl text-text-muted">/100</span>}
           </div>
           <div className="text-sm tracking-widest text-text-muted uppercase mb-2">Earth Resonance Index</div>
           {eri && <StatusBadge status={eri.status} />}
@@ -167,16 +161,16 @@ export function Dashboard() {
             {isLoading && !geo ? (
                <div className="text-sm text-text-muted">Buscando...</div>
             ) : !geo ? (
-               <div className="text-sm text-rose-400">Dados geomagnéticos temporariamente indisponíveis.</div>
+               <div className="text-sm text-rose-400">Não foi possível atualizar os dados neste momento.</div>
             ) : (
               <>
                 <div>
-                  <div className="text-3xl font-light text-text-main mb-1">Kp {geo.currentKp ?? '--'}</div>
+                  <div className="text-3xl font-light text-text-main mb-1">Kp {geo.currentKp}</div>
                   <StatusBadge status={geo.status} />
                 </div>
                 <div className="text-right">
                   <div className="text-sm text-text-muted">Fonte</div>
-                  <div className="text-sm font-medium">{geo.dataSource || '--'}</div>
+                  <div className="text-sm font-medium">{geo.dataSource}</div>
                 </div>
               </>
             )}
@@ -194,16 +188,16 @@ export function Dashboard() {
             {isLoading && !solar ? (
                <div className="text-sm text-text-muted">Buscando...</div>
             ) : !solar ? (
-               <div className="text-sm text-rose-400">Dados solares temporariamente indisponíveis.</div>
+               <div className="text-sm text-rose-400">Não foi possível atualizar os dados neste momento.</div>
             ) : (
               <>
                 <div>
-                  <div className="text-3xl font-light text-text-main mb-1">Fluxo {solar.solarFlux ?? '--'}</div>
+                  <div className="text-3xl font-light text-text-main mb-1">Fluxo {solar.solarFlux}</div>
                   <StatusBadge status={solar.status} />
                 </div>
                 <div className="text-right">
                   <div className="text-sm text-text-muted">Fonte</div>
-                  <div className="text-sm font-medium">{solar.dataSource || '--'}</div>
+                  <div className="text-sm font-medium">{solar.dataSource}</div>
                 </div>
               </>
             )}
@@ -224,44 +218,24 @@ export function Dashboard() {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <span className="text-text-muted">Fonte atual:</span>
                   <span className="font-medium text-text-main">Carregando...</span>
-                  <span className="text-text-muted">Tipo:</span>
-                  <span className="font-medium text-text-main">Carregando...</span>
-                  <span className="text-text-muted">Medição primária:</span>
-                  <span className="font-medium text-text-main">Carregando...</span>
                 </div>
               ) : !current ? (
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <span className="text-text-muted">Fonte atual:</span>
-                  <span className="font-medium text-rose-400">Nenhuma — fonte ELF primária não conectada</span>
-                  <span className="text-text-muted">Tipo:</span>
-                  <span className="font-medium text-text-muted">Sem dados de medição</span>
-                  <span className="text-text-muted">Medição primária:</span>
-                  <span className="font-medium text-text-muted">Não disponível</span>
+                  <span className="font-medium text-rose-400">Dados ausentes no momento</span>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <span className="text-text-muted">Fonte atual:</span>
-                  <span className="font-medium text-text-main">{current.source_type || 'Fonte desconhecida'}</span>
+                  <span className="text-text-muted">Estação:</span>
+                  <span className="font-medium text-text-main">{current.source || 'Tomsk / SOS-70'}</span>
                   <span className="text-text-muted">Tipo:</span>
-                  <span className={`font-medium ${current.is_demo ? 'text-amber-400' : 'text-text-main'}`}>
-                    {current.is_demo ? 'Dados demonstrativos' : 'Medição real'}
-                  </span>
-                  <span className="text-text-muted">Medição primária:</span>
-                  <span className="font-medium text-text-main">
-                    {current.is_demo ? 'Não' : 'Sim'}
-                  </span>
+                  <span className="font-medium text-text-main">Espectrograma ELF</span>
+                  <span className="text-text-muted">Valor numérico:</span>
+                  <span className="font-medium text-text-main">Derivado computacionalmente da imagem</span>
+                  <span className="text-text-muted">Classificação:</span>
+                  <span className="font-medium text-amber-400">Observação derivada</span>
                 </div>
               )}
-            </div>
-
-            <div>
-              <div className="font-bold text-text-main mb-2 tracking-wider">GEOMAGNETISMO</div>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <span className="text-text-muted">Fonte:</span>
-                <span className="font-medium text-text-main">{geo?.dataSource || 'NOAA'}</span>
-                <span className="text-text-muted">Tipo:</span>
-                <span className="font-medium text-text-main">Fonte secundária/contextual</span>
-              </div>
             </div>
           </div>
 
@@ -276,13 +250,7 @@ export function Dashboard() {
               </div>
             </div>
 
-            <div>
-              <div className="font-bold text-text-main mb-2 tracking-wider">SUNGeo</div>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <span className="text-text-muted">Tipo:</span>
-                <span className="font-medium text-text-main">Índice agregado/contextual</span>
-              </div>
-            </div>
+            
 
             <div>
               <div className="font-bold text-text-main mb-2 tracking-wider">ERI</div>
