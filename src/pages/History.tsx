@@ -53,12 +53,12 @@ export function HistoryPage() {
 
       <Card className="p-0 overflow-hidden">
         <div className="p-6 border-b border-border">
-          <CardTitle>Variação da Amplitude (24h)</CardTitle>
+          <CardTitle as="h2">Variação da Amplitude (24h)</CardTitle>
           <CardDescription>Estação Principal</CardDescription>
         </div>
         {data.length === 0 ? (
           <div className="h-[400px] w-full p-6 flex flex-col items-center justify-center text-center">
-            <h3 className="text-xl font-medium text-text-main mb-2">Histórico ELF indisponível</h3>
+            <h2 className="text-xl font-medium text-text-main mb-2">Histórico ELF indisponível</h2>
             <p className="text-text-muted max-w-lg">
               Sem uma fonte ELF conectada, os registros estruturados do espectrograma não estão sendo salvos no momento.
             </p>

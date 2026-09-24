@@ -22,11 +22,15 @@ export function CardHeader({ children, className }: CardProps) {
   );
 }
 
-export function CardTitle({ children, className }: CardProps) {
+interface CardTitleProps extends CardProps {
+  as?: 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'div';
+}
+
+export function CardTitle({ children, className, as: Component = 'h3' }: CardTitleProps) {
   return (
-    <h3 className={cn("text-lg font-medium text-text-main tracking-tight", className)}>
+    <Component className={cn("text-lg font-medium text-text-main tracking-tight", className)}>
       {children}
-    </h3>
+    </Component>
   );
 }
 

@@ -42,7 +42,7 @@ export function Geomagnetic() {
         </Card>
 
         <Card className="flex flex-col justify-center p-8">
-          <h3 className="text-lg font-medium mb-6">Escala Kp</h3>
+          <h2 className="text-lg font-medium mb-6">Escala Kp</h2>
           <ul className="space-y-4">
             <li className="flex items-center justify-between">
               <span className="text-text-muted">Kp 0–2</span>
@@ -66,7 +66,7 @@ export function Geomagnetic() {
 
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-2">
-          <h3 className="text-lg font-medium">Histórico Recente (Últimas 24h)</h3>
+          <h2 className="text-lg font-medium">Histórico Recente (Últimas 24h)</h2>
           <span className="text-xs text-text-muted uppercase tracking-wider">Horários em UTC</span>
         </div>
         <div className="flex items-end gap-1 sm:gap-2 h-48 pt-8">

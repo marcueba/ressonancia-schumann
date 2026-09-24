@@ -94,13 +94,13 @@ export function Dashboard() {
 
       <Card className="p-0 overflow-hidden bg-surface-hover/20">
         <div className="p-6 border-b border-border">
-          <CardTitle>Modos Observados</CardTitle>
+          <CardTitle as="h2">Modos Observados</CardTitle>
           <CardDescription>Frequência e amplitude dos modos observados.</CardDescription>
         </div>
         {!current ? (
           <div className="h-[400px] w-full p-6 flex flex-col items-center justify-center text-center">
             <Activity className="w-12 h-12 text-text-muted mb-4 opacity-50" />
-            <h3 className="text-xl font-medium text-text-main mb-2">Dados ELF primários indisponíveis</h3>
+            <h2 className="text-xl font-medium text-text-main mb-2">Dados ELF primários indisponíveis</h2>
             <p className="text-text-muted max-w-lg">
               A arquitetura do observatório está preparada para gerar os espectrogramas, mas nenhuma fonte ELF de alta frequência está conectada neste momento.
             </p>
@@ -160,7 +160,7 @@ export function Dashboard() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Compass className="w-5 h-5 text-text-muted" />
-              <CardTitle>Atividade Geomagnética</CardTitle>
+              <CardTitle as="h2">Atividade Geomagnética</CardTitle>
             </div>
           </CardHeader>
           <div className="flex items-center justify-between mb-4">
@@ -187,7 +187,7 @@ export function Dashboard() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Sun className="w-5 h-5 text-text-muted" />
-              <CardTitle>Atividade Solar</CardTitle>
+              <CardTitle as="h2">Atividade Solar</CardTitle>
             </div>
           </CardHeader>
           <div className="flex items-center justify-between mb-4">
@@ -213,7 +213,7 @@ export function Dashboard() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Proveniência dos Dados</CardTitle>
+          <CardTitle as="h2">Proveniência dos Dados</CardTitle>
           <CardDescription>Auditoria de fontes e tipos de dados da plataforma.</CardDescription>
         </CardHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm mt-4">

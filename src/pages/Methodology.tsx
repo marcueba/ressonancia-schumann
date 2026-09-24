@@ -16,7 +16,7 @@ export function Methodology() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>SOSRFF (Tomsk)</CardTitle>
+            <CardTitle as="h2">SOSRFF (Tomsk)</CardTitle>
             <CardDescription>Sistema de Observação Espacial de Tomsk</CardDescription>
           </CardHeader>
           <div className="space-y-3">
@@ -40,7 +40,7 @@ export function Methodology() {
 
         <Card>
           <CardHeader>
-            <CardTitle>NOAA SWPC</CardTitle>
+            <CardTitle as="h2">NOAA SWPC</CardTitle>
             <CardDescription>Space Weather Prediction Center</CardDescription>
           </CardHeader>
           <div className="space-y-3">
@@ -61,7 +61,7 @@ export function Methodology() {
 
         <Card>
           <CardHeader>
-            <CardTitle>NASA SDO</CardTitle>
+            <CardTitle as="h2">NASA SDO</CardTitle>
             <CardDescription>Solar Dynamics Observatory</CardDescription>
           </CardHeader>
           <div className="space-y-3">
@@ -82,7 +82,7 @@ export function Methodology() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Sierra Nevada ELF Station</CardTitle>
+            <CardTitle as="h2">Sierra Nevada ELF Station</CardTitle>
             <CardDescription>Universidade de Granada (UGR)</CardDescription>
           </CardHeader>
           <div className="space-y-3">
@@ -98,7 +98,7 @@ export function Methodology() {
 
         <Card>
           <CardHeader>
-            <CardTitle>SunGeo</CardTitle>
+            <CardTitle as="h2">SunGeo</CardTitle>
             <CardDescription>Agregação de Dados Espaciais</CardDescription>
           </CardHeader>
           <div className="space-y-3">
@@ -114,7 +114,7 @@ export function Methodology() {
 
         <Card>
           <CardHeader>
-            <CardTitle>BGS (British Geological Survey)</CardTitle>
+            <CardTitle as="h2">BGS (British Geological Survey)</CardTitle>
             <CardDescription>NERC (Reino Unido)</CardDescription>
           </CardHeader>
           <div className="space-y-3">

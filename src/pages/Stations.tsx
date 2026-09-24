@@ -38,7 +38,7 @@ export function Stations() {
                 <MapPin className="w-4 h-4" />
                 <span className="text-sm uppercase tracking-wider">{station.country}</span>
               </div>
-              <CardTitle className="text-xl">{station.name}</CardTitle>
+              <CardTitle as="h2" className="text-xl">{station.name}</CardTitle>
             </CardHeader>
             
             <div className="space-y-4 mt-6">

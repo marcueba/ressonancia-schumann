@@ -61,7 +61,7 @@ export function CurrentResonance() {
         {modes.map((mode, i) => (
           <Card key={i} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex-1">
-              <h3 className="text-lg font-medium tracking-tight mb-1">{mode.name}</h3>
+              <h2 className="text-lg font-medium tracking-tight mb-1">{mode.name}</h2>
               <p className="text-sm text-text-muted">Frequência nominal teórica: {mode.expected}</p>
             </div>
             
