@@ -4,7 +4,7 @@ const path = require('path');
 const { spawn, execSync } = require('child_process');
 const os = require('os');
 
-const ROUTES = ['/', '/atual', '/historico', '/estacoes', '/indice', '/geomagnetica', '/solar', '/metodologia'];
+const ROUTES = ['/', '/atual', '/historico', '/estacoes', '/indice', '/geomagnetica', '/solar', '/metodologia', '/404'];
 const PORT = process.env.PRERENDER_PORT || 8999;
 
 async function getBrowserConfig() {
@@ -77,7 +77,7 @@ async function getBrowserConfig() {
 async function startServer() {
   return new Promise((resolve, reject) => {
     const server = spawn(process.execPath, ['dist/server.cjs'], {
-      env: { ...process.env, NODE_ENV: 'production', DATA_MODE: 'live', PORT: PORT.toString() },
+      env: { ...process.env, NODE_ENV: 'production', DATA_MODE: 'live', PORT: PORT.toString(), PRERENDER: 'true' },
     });
 
     let started = false;
@@ -140,7 +140,11 @@ async function startServer() {
         throw new Error(`Failed to load ${url}: Status ${response.status()}`);
       }
 
-      await page.waitForSelector('link[rel="canonical"]', { timeout: 10000 });
+      if (route === '/404') {
+        await page.waitForSelector('meta[name="robots"]', { timeout: 10000 });
+      } else {
+        await page.waitForSelector('link[rel="canonical"]', { timeout: 10000 });
+      }
       await new Promise(r => setTimeout(r, 1000));
 
       const html = await page.evaluate(() => {

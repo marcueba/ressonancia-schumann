@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import * as dotenv from 'dotenv';
 import { tomskProvider, bgsProvider, cumianaProvider, etnaProvider, heartmathProvider } from "./server/providers/SchumannProviders";
@@ -107,7 +108,7 @@ async function startServer() {
 
   app.get("/api/stations", async (req, res) => {
     const isLive = process.env.DATA_MODE === 'live';
-    
+
     // Evaluate status for each station
     const stationsStatus = await Promise.all([
       tomskProvider.getCurrent(),
@@ -137,7 +138,7 @@ async function startServer() {
         lastUpdate: pResult.timestamp
       };
     });
-    
+
     res.json(formatted);
   });
 
@@ -146,7 +147,7 @@ async function startServer() {
     if (!station) {
       return res.status(404).json({ error: 'Station not found' });
     }
-    
+
     // Evaluate status for this station specifically if we wanted to
     // For now, return basic info and 'online' status for demo
     res.json({
@@ -205,7 +206,7 @@ async function startServer() {
 
     const sData = schumann.success ? schumann.data! : null;
     const kp = geo.success ? geo.data!.currentKp : null;
-    
+
     const eri = calculateERI(sData, kp);
     res.json(eri);
   });
@@ -286,7 +287,16 @@ async function startServer() {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath, { extensions: ['html'] }));
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      if (process.env.PRERENDER === 'true') {
+        return res.sendFile(path.join(distPath, 'index.html'));
+      }
+
+      const notFoundPath = path.join(distPath, '404.html');
+      if (fs.existsSync(notFoundPath)) {
+        res.status(404).sendFile(notFoundPath);
+      } else {
+        res.status(404).send('Página não encontrada');
+      }
     });
   }
 

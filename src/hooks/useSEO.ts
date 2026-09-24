@@ -3,10 +3,11 @@ import { useEffect } from 'react';
 interface SEOProps {
   title: string;
   description: string;
-  path: string;
+  path?: string;
+  noindex?: boolean;
 }
 
-export function useSEO({ title, description, path }: SEOProps) {
+export function useSEO({ title, description, path, noindex }: SEOProps) {
   useEffect(() => {
     // Update title
     document.title = title;
@@ -22,16 +23,37 @@ export function useSEO({ title, description, path }: SEOProps) {
       document.head.appendChild(metaDescription);
     }
 
-    // Update canonical
-    const canonicalUrl = `https://ressonanciaschumann.com${path}`;
-    let linkCanonical = document.querySelector('link[rel="canonical"]');
-    if (linkCanonical) {
-      linkCanonical.setAttribute('href', canonicalUrl);
-    } else {
-      linkCanonical = document.createElement('link');
-      linkCanonical.setAttribute('rel', 'canonical');
-      linkCanonical.setAttribute('href', canonicalUrl);
-      document.head.appendChild(linkCanonical);
+    // Update robots if noindex
+    let metaRobots = document.querySelector('meta[name="robots"]');
+    if (noindex) {
+      if (metaRobots) {
+        metaRobots.setAttribute('content', 'noindex, follow');
+      } else {
+        metaRobots = document.createElement('meta');
+        metaRobots.setAttribute('name', 'robots');
+        metaRobots.setAttribute('content', 'noindex, follow');
+        document.head.appendChild(metaRobots);
+      }
+      // Remove canonical if present on 404
+      const existingCanonical = document.querySelector('link[rel="canonical"]');
+      if (existingCanonical) {
+        existingCanonical.remove();
+      }
+    } else if (path) {
+      if (metaRobots) {
+        metaRobots.remove();
+      }
+      // Update canonical
+      const canonicalUrl = `https://ressonanciaschumann.com${path}`;
+      let linkCanonical = document.querySelector('link[rel="canonical"]');
+      if (linkCanonical) {
+        linkCanonical.setAttribute('href', canonicalUrl);
+      } else {
+        linkCanonical = document.createElement('link');
+        linkCanonical.setAttribute('rel', 'canonical');
+        linkCanonical.setAttribute('href', canonicalUrl);
+        document.head.appendChild(linkCanonical);
+      }
     }
-  }, [title, description, path]);
+  }, [title, description, path, noindex]);
 }
