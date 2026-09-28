@@ -11,8 +11,12 @@ async function main() {
     }
 
     try {
-        const success = await runCollector();
-        if (success) {
+        const result = await runCollector();
+        if (result === 'persisted' || result === 'already_exists') {
+            console.log('[Schumann Job] completed');
+            process.exit(0);
+        } else if (result === 'no_valid_observation') {
+            console.log('[Schumann Job] no valid observation');
             console.log('[Schumann Job] completed');
             process.exit(0);
         } else {

@@ -14,10 +14,12 @@ const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabase
 
 let isCollecting = false;
 
-export async function runCollector(): Promise<boolean> {
+export type CollectorResult = 'persisted' | 'already_exists' | 'no_valid_observation' | 'error';
+
+export async function runCollector(): Promise<CollectorResult> {
   if (isCollecting) {
     console.log('[Collector] Já existe uma coleta em andamento. Ignorando.');
-    return false;
+    return 'error';
   }
 
   isCollecting = true;
@@ -29,15 +31,14 @@ export async function runCollector(): Promise<boolean> {
     
     if (!result.success || !result.data) {
       console.error('[Collector] Falha ao obter dados do provider.');
-      return false;
+      return 'error';
     }
 
     const data = result.data;
 
-    // 2 & 3. Rejeita leitura sem timestamp ou sem F1 válido
-    if (!data.timestamp || data.fundamental.frequency === null) {
-      console.error('[Collector] Dados inválidos recebidos. Timestamp ou F1 ausente.');
-      return false;
+    if (data.fundamental.frequency === null || !data.timestamp) {
+      console.log('[Collector] Ausência de observação válida (F1 null ou sem timestamp).');
+      return 'no_valid_observation';
     }
 
     // 7. Preparar payload de inserção (Normalizado)
@@ -56,8 +57,6 @@ export async function runCollector(): Promise<boolean> {
 
     console.log(`[Schumann Job] timestamp da fonte: ${data.timestamp}`);
 
-    // A estratégia de idempotência (8) é usar UNIQUE(station_id, timestamp) no banco de dados.
-    // Assim, se tentarmos inserir o mesmo timestamp, o Supabase retornará um erro ou ignorará via ON CONFLICT DO NOTHING.
     if (supabase) {
       const { error, data: insertedData } = await supabase.from('measurements').upsert(payload, { 
         onConflict: 'station_id, timestamp', 
@@ -66,22 +65,23 @@ export async function runCollector(): Promise<boolean> {
       
       if (error) {
         console.error('[Collector] Erro no Supabase:', error.message);
-        return false;
+        return 'error';
       } else {
         if (insertedData && insertedData.length > 0) {
           console.log('[Schumann Job] persisted');
+          return 'persisted';
         } else {
           console.log('[Schumann Job] already exists');
+          return 'already_exists';
         }
-        return true;
       }
     } else {
       console.error('[Collector] Supabase client não inicializado (falta credencial server-side).');
-      return false;
+      return 'error';
     }
   } catch (err: any) {
     console.error('[Collector] Erro interno:', err.message);
-    return false;
+    return 'error';
   } finally {
     isCollecting = false;
   }
