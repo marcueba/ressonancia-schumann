@@ -23,8 +23,8 @@ export const dataProvider = {
     return res.json();
   },
 
-  async getHistoricalData(): Promise<HistoricalDataPoint[]> {
-    const res = await fetch('/api/history');
+  async getHistoricalData(range: string = '24h'): Promise<HistoricalDataPoint[]> {
+    const res = await fetch(`/api/history?range=${range}`);
     if (!res.ok) throw new Error('Failed to fetch historical data');
     return res.json();
   },

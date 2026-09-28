@@ -59,7 +59,12 @@ export interface SolarData {
 }
 
 export interface HistoricalDataPoint {
-  time: string;
-  frequency: number;
-  amplitude: number;
+  timestamp: string;
+  f1: number | null;
+  f2: number | null;
+  f3: number | null;
+  quality: string;
+  sourceType: string;
+  derivedFromImage: boolean;
+  processor: string;
 }

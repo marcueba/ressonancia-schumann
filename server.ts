@@ -278,7 +278,7 @@ async function startServer() {
       
       const { data, error } = await supabase
          .from('measurements')
-         .select('timestamp, f1_hz, f2_hz')
+         .select('timestamp, f1_hz, f2_hz, f3_hz, quality, source_type, derived_from_image, processor')
          .gte('timestamp', new Date(Date.now() - msRange).toISOString())
          .order('timestamp', { ascending: true });
          
@@ -288,9 +288,14 @@ async function startServer() {
       }
       
       return res.json(data.map(row => ({ 
-        time: row.timestamp, 
-        frequency: row.f1_hz,
-        f2: row.f2_hz 
+        timestamp: row.timestamp, 
+        f1: row.f1_hz,
+        f2: row.f2_hz,
+        f3: row.f3_hz,
+        quality: row.quality,
+        sourceType: row.source_type,
+        derivedFromImage: row.derived_from_image,
+        processor: row.processor
       })));
     }
     
