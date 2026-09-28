@@ -149,62 +149,144 @@ export function Dashboard() {
         )}
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Compass className="w-5 h-5 text-text-muted" />
-              <CardTitle as="h2">Atividade Geomagnética</CardTitle>
-            </div>
-          </CardHeader>
-          <div className="flex items-center justify-between mb-4">
-            {isLoading && !geo ? (
-               <div className="text-sm text-text-muted">Buscando...</div>
-            ) : !geo ? (
-               <div className="text-sm text-rose-400">Não foi possível atualizar os dados neste momento.</div>
-            ) : (
-              <>
-                <div>
-                  <div className="text-3xl font-light text-text-main mb-1">Kp {geo.currentKp}</div>
-                  <StatusBadge status={geo.status} />
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-text-muted">Fonte</div>
-                  <div className="text-sm font-medium">{geo.dataSource}</div>
-                </div>
-              </>
-            )}
-          </div>
-        </Card>
+      
+      <div className="space-y-4 mt-8 mb-8">
+        <div className="flex flex-col gap-1 mb-4">
+          <h2 className="text-xl font-medium text-text-main">Contexto Geofísico Integrado</h2>
+          <p className="text-sm text-text-muted">
+            Os indicadores são apresentados em conjunto para contextualização geofísica. A proximidade temporal entre variações não implica, isoladamente, relação causal.
+          </p>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Sun className="w-5 h-5 text-text-muted" />
-              <CardTitle as="h2">Atividade Solar</CardTitle>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Schumann Card */}
+          <Card className="flex flex-col h-full p-0 overflow-hidden">
+            <div className="p-4 border-b border-border bg-surface-hover/30">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-xs font-semibold tracking-wider text-text-muted uppercase">Ionosfera (Terra)</h3>
+                <Radio className="w-4 h-4 text-primary" />
+              </div>
+              <h4 className="text-sm text-text-main">Ressonância Schumann</h4>
             </div>
-          </CardHeader>
-          <div className="flex items-center justify-between mb-4">
-            {isLoading && !solar ? (
-               <div className="text-sm text-text-muted">Buscando...</div>
-            ) : !solar ? (
-               <div className="text-sm text-rose-400">Não foi possível atualizar os dados neste momento.</div>
-            ) : (
-              <>
-                <div>
-                  <div className="text-3xl font-light text-text-main mb-1">Fluxo {solar.solarFlux}</div>
-                  <StatusBadge status={solar.status} />
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-text-muted">Fonte</div>
-                  <div className="text-sm font-medium">{solar.dataSource}</div>
-                </div>
-              </>
-            )}
-          </div>
-        </Card>
+            <div className="p-4 flex-1 flex flex-col justify-between">
+              {isLoading && !current ? (
+                <div className="text-sm text-text-muted flex-1 flex items-center justify-center">Buscando...</div>
+              ) : !current ? (
+                <div className="text-sm text-rose-400 flex-1 flex items-center justify-center">Dados indisponíveis no momento.</div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-2 text-center mb-4">
+                    <div className="bg-surface rounded p-2">
+                      <div className="text-[10px] text-text-muted uppercase mb-1">F1</div>
+                      <div className="text-lg font-light text-text-main">{current.fundamental?.frequency?.toFixed(1) || '--'}</div>
+                    </div>
+                    <div className="bg-surface rounded p-2">
+                      <div className="text-[10px] text-text-muted uppercase mb-1">F2</div>
+                      <div className="text-lg font-light text-text-main">{current.mode2?.frequency?.toFixed(1) || '--'}</div>
+                    </div>
+                    <div className="bg-surface rounded p-2">
+                      <div className="text-[10px] text-text-muted uppercase mb-1">F3</div>
+                      <div className="text-lg font-light text-text-main">{current.mode3?.frequency?.toFixed(1) || '--'}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1 pt-3 border-t border-border">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-text-muted">Última observação disponível</span>
+                      <span className="text-text-main font-medium">{current.timestamp ? new Date(current.timestamp).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '--'}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-text-muted">Proveniência</span>
+                      <span className="text-text-main">{current.source_type === 'derived_spectrogram' ? 'Derivado (Espectrograma)' : current.source || '--'}</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </Card>
+
+          {/* Geomagnetism Card */}
+          <Card className="flex flex-col h-full p-0 overflow-hidden">
+            <div className="p-4 border-b border-border bg-surface-hover/30">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-xs font-semibold tracking-wider text-text-muted uppercase">Magnetosfera</h3>
+                <Compass className="w-4 h-4 text-cyan-400" />
+              </div>
+              <h4 className="text-sm text-text-main">Atividade Geomagnética</h4>
+            </div>
+            <div className="p-4 flex-1 flex flex-col justify-between">
+              {isLoading && !geo ? (
+                <div className="text-sm text-text-muted flex-1 flex items-center justify-center">Buscando...</div>
+              ) : !geo ? (
+                <div className="text-sm text-rose-400 flex-1 flex items-center justify-center">Dados indisponíveis no momento.</div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-4 mt-2">
+                    <div>
+                      <div className="text-[10px] text-text-muted uppercase mb-1">Índice Kp Atual</div>
+                      <div className="text-3xl font-light text-text-main">{geo.currentKp}</div>
+                    </div>
+                    <StatusBadge status={geo.status} />
+                  </div>
+                  
+                  <div className="space-y-1 pt-3 border-t border-border">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-text-muted">Última observação disponível</span>
+                      <span className="text-text-main font-medium">{geo.recentKp?.[geo.recentKp.length - 1]?.time ? new Date(geo.recentKp[geo.recentKp.length - 1].time).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '--'}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-text-muted">Fonte</span>
+                      <span className="text-text-main">{geo.dataSource}</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </Card>
+
+          {/* Solar Card */}
+          <Card className="flex flex-col h-full p-0 overflow-hidden">
+            <div className="p-4 border-b border-border bg-surface-hover/30">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-xs font-semibold tracking-wider text-text-muted uppercase">Sol</h3>
+                <Sun className="w-4 h-4 text-amber-400" />
+              </div>
+              <h4 className="text-sm text-text-main">Atividade Solar</h4>
+            </div>
+            <div className="p-4 flex-1 flex flex-col justify-between">
+              {isLoading && !solar ? (
+                <div className="text-sm text-text-muted flex-1 flex items-center justify-center">Buscando...</div>
+              ) : !solar ? (
+                <div className="text-sm text-rose-400 flex-1 flex items-center justify-center">Dados indisponíveis no momento.</div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4 mb-4 mt-2">
+                    <div>
+                      <div className="text-[10px] text-text-muted uppercase mb-1">Fluxo (F10.7)</div>
+                      <div className="text-3xl font-light text-text-main">{solar.solarFlux}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-text-muted uppercase mb-1">Manchas</div>
+                      <div className="text-3xl font-light text-text-main">{solar.sunspots}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1 pt-3 border-t border-border">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-text-muted">Última observação disponível</span>
+                      <span className="text-text-main font-medium">{solar.timestamp ? new Date(solar.timestamp).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '--'}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-text-muted">Fonte</span>
+                      <span className="text-text-main">{solar.dataSource}</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </Card>
+        </div>
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle as="h2">Proveniência dos Dados</CardTitle>
