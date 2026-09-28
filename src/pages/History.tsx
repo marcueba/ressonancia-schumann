@@ -76,6 +76,34 @@ export function HistoryPage() {
   }, [data]);
 
   const hasDerived = data.some(d => d.derivedFromImage);
+  
+  const observedInterval = useMemo(() => {
+    if (data.length < 2) return null;
+    const first = new Date(data[0].timestamp).getTime();
+    const last = new Date(data[data.length - 1].timestamp).getTime();
+    const diffMs = last - first;
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 24) {
+      const days = Math.floor(hours / 24);
+      const remHours = hours % 24;
+      return `${days}d ${remHours}h`;
+    }
+    
+    return `${hours}h${minutes}min`;
+  }, [data]);
+  
+  const qualitySummary = useMemo(() => {
+    if (data.length === 0) return null;
+    const counts = data.reduce((acc, curr) => {
+      const q = curr.quality || 'Desconhecida';
+      acc[q] = (acc[q] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return Object.entries(counts).map(([q, count]) => `${count} com qualidade "${q}"`).join(', ');
+  }, [data]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
@@ -117,11 +145,17 @@ export function HistoryPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${observedInterval ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4 mb-6`}>
             <Card className="p-4 flex flex-col justify-center">
               <span className="text-xs text-text-muted uppercase tracking-wider mb-1">Cobertura observacional</span>
-              <span className="text-2xl text-text-main">{data.length} <span className="text-sm text-text-muted font-normal">observações</span></span>
+              <span className="text-xl text-text-main font-medium">{data.length} <span className="text-sm text-text-muted font-normal">observações</span></span>
             </Card>
+            {observedInterval && (
+              <Card className="p-4 flex flex-col justify-center">
+                <span className="text-xs text-text-muted uppercase tracking-wider mb-1">Intervalo observado</span>
+                <span className="text-xl text-text-main font-medium">{observedInterval}</span>
+              </Card>
+            )}
             <Card className="p-4 flex flex-col justify-center">
               <span className="text-xs text-text-muted uppercase tracking-wider mb-1">Primeira</span>
               <span className="text-sm text-text-main">{formatDate(data[0].timestamp, true)}</span>
@@ -133,7 +167,7 @@ export function HistoryPage() {
           </div>
 
           <Card className="p-0 overflow-hidden">
-            <div className="p-6 border-b border-border">
+            <div className="p-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <CardTitle as="h2">Frequências Observadas ({RANGES.find(r => r.value === range)?.label})</CardTitle>
             </div>
             
@@ -179,45 +213,70 @@ export function HistoryPage() {
               </ResponsiveContainer>
             </div>
             <div className="px-6 pb-6 text-xs text-text-muted leading-relaxed">
-              <p>Os valores apresentados correspondem às observações disponíveis na base do projeto. Lacunas representam períodos sem observação válida persistida.</p>
-              {hasDerived && <p className="mt-1">Dados derivados de espectrograma.</p>}
+              <p>Os pontos representam observações efetivamente registradas. Espaços entre eles indicam períodos sem observações válidas persistidas e não devem ser interpretados como ausência do fenômeno.</p>
             </div>
           </Card>
           
-          <Card className="p-6">
-            <CardTitle as="h3" className="mb-4 text-lg">Resumo Estatístico do Período</CardTitle>
-            {data.length < 10 ? (
-              <div className="py-4 text-center">
-                <p className="text-text-main font-medium mb-1">DADOS AINDA INSUFICIENTES PARA ANÁLISE ESTATÍSTICA</p>
-                <p className="text-sm text-text-muted max-w-lg mx-auto">O histórico está sendo construído automaticamente. As estatísticas ganham significado à medida que novas observações são acumuladas (mínimo de 10 requeridas).</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="p-6">
+              <CardTitle as="h3" className="mb-4 text-lg">Qualidade dos Registros</CardTitle>
+              <div className="space-y-4">
+                <p className="text-sm text-text-muted">{qualitySummary}</p>
+                <div className="mt-4 p-4 bg-surface-hover rounded-md border border-border">
+                  <h4 className="text-xs font-semibold text-text-main mb-2 uppercase tracking-wide">Sobre estes dados</h4>
+                  {hasDerived ? (
+                    <p className="text-sm text-text-muted">
+                      Os registros atualmente disponíveis são derivados de espectrograma e não representam leitura instrumental direta realizada por este projeto.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-text-muted">
+                      Os dados disponíveis consistem nas medições persistidas em banco até o momento.
+                    </p>
+                  )}
+                  {data[0]?.sourceType && (
+                    <p className="text-xs text-text-muted mt-2 pt-2 border-t border-border">
+                      Fonte principal: {data[0].sourceType} {data[0].processor ? `(${data[0].processor})` : ''}
+                    </p>
+                  )}
+                </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {['f1', 'f2', 'f3'].map((key) => {
-                  const s = stats[key as keyof typeof stats];
-                  if (!s) return null;
-                  const title = key === 'f1' ? 'Fundamental (F1)' : key === 'f2' ? 'Segundo Modo (F2)' : 'Terceiro Modo (F3)';
-                  return (
-                    <div key={key} className="space-y-2">
-                      <h4 className="text-sm font-medium text-text-muted">{title}</h4>
-                      <div className="flex justify-between border-b border-border pb-1">
-                        <span className="text-sm">Média</span>
-                        <span className="text-sm text-text-main font-medium">{s.avg} Hz</span>
+            </Card>
+
+            <Card className="p-6">
+              <CardTitle as="h3" className="mb-4 text-lg">Resumo Estatístico</CardTitle>
+              {data.length < 10 ? (
+                <div className="py-2 text-center h-full flex flex-col justify-center">
+                  <p className="text-text-main font-medium mb-1">DADOS AINDA INSUFICIENTES PARA ANÁLISE ESTATÍSTICA</p>
+                  <p className="text-sm text-text-muted max-w-sm mx-auto">O histórico está sendo construído automaticamente. As estatísticas ganham significado à medida que novas observações são acumuladas (mínimo de 10 requeridas).</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {['f1', 'f2', 'f3'].map((key) => {
+                    const s = stats[key as keyof typeof stats];
+                    if (!s) return null;
+                    const title = key === 'f1' ? 'Fundamental (F1)' : key === 'f2' ? 'Segundo Modo (F2)' : 'Terceiro Modo (F3)';
+                    return (
+                      <div key={key} className="space-y-2">
+                        <h4 className="text-sm font-medium text-text-muted">{title}</h4>
+                        <div className="flex justify-between border-b border-border pb-1">
+                          <span className="text-sm">Média</span>
+                          <span className="text-sm text-text-main font-medium">{s.avg} Hz</span>
+                        </div>
+                        <div className="flex justify-between border-b border-border pb-1">
+                          <span className="text-sm">Mínima</span>
+                          <span className="text-sm text-text-main">{s.min} Hz</span>
+                        </div>
+                        <div className="flex justify-between pb-1">
+                          <span className="text-sm">Máxima</span>
+                          <span className="text-sm text-text-main">{s.max} Hz</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between border-b border-border pb-1">
-                        <span className="text-sm">Mínima</span>
-                        <span className="text-sm text-text-main">{s.min} Hz</span>
-                      </div>
-                      <div className="flex justify-between pb-1">
-                        <span className="text-sm">Máxima</span>
-                        <span className="text-sm text-text-main">{s.max} Hz</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </div>
         </>
       )}
     </div>
