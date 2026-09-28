@@ -76,34 +76,6 @@ export function HistoryPage() {
   }, [data]);
 
   const hasDerived = data.some(d => d.derivedFromImage);
-  
-  // Para exibir gaps (lacunas), o Recharts com connectNulls={false} requer que haja pontos nulos no array.
-  // Como os dados vêm esparsos, precisamos injetar nulls se o intervalo for maior que 2 horas (por exemplo).
-  const chartData = useMemo(() => {
-    if (data.length === 0) return [];
-    const withGaps: any[] = [];
-    
-    for (let i = 0; i < data.length; i++) {
-      withGaps.push({ ...data[i] });
-      
-      if (i < data.length - 1) {
-        const currTime = new Date(data[i].timestamp).getTime();
-        const nextTime = new Date(data[i+1].timestamp).getTime();
-        const hoursDiff = (nextTime - currTime) / (1000 * 60 * 60);
-        
-        // Se a lacuna for maior que 2.5 horas, injeta um ponto nulo no meio para quebrar a linha visualmente
-        if (hoursDiff > 2.5) {
-          withGaps.push({
-            timestamp: new Date(currTime + (nextTime - currTime)/2).toISOString(),
-            f1: null,
-            f2: null,
-            f3: null
-          });
-        }
-      }
-    }
-    return withGaps;
-  }, [data]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
@@ -167,7 +139,7 @@ export function HistoryPage() {
             
             <div className="h-[400px] w-full p-6 pt-8 relative">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
+                <LineChart data={data}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                   <XAxis 
                     dataKey="timestamp" 
@@ -200,9 +172,9 @@ export function HistoryPage() {
                     }}
                   />
                   <Legend verticalAlign="top" height={36} iconType="circle" />
-                  <Line type="monotone" name="F1 — Fundamental" dataKey="f1" stroke="var(--color-violet)" strokeWidth={2} dot={{r: 3, fill: 'var(--color-violet)', strokeWidth: 0}} activeDot={{r: 5}} connectNulls={false} />
-                  <Line type="monotone" name="F2 — Segundo modo" dataKey="f2" stroke="var(--color-cyan)" strokeWidth={2} dot={{r: 3, fill: 'var(--color-cyan)', strokeWidth: 0}} activeDot={{r: 5}} connectNulls={false} />
-                  <Line type="monotone" name="F3 — Terceiro modo" dataKey="f3" stroke="var(--color-emerald)" strokeWidth={2} dot={{r: 3, fill: 'var(--color-emerald)', strokeWidth: 0}} activeDot={{r: 5}} connectNulls={false} />
+                  <Line type="monotone" name="F1 — Fundamental" dataKey="f1" stroke="none" strokeWidth={0} dot={{r: 4, fill: 'var(--color-violet)', strokeWidth: 0}} activeDot={{r: 6}} connectNulls={false} />
+                  <Line type="monotone" name="F2 — Segundo modo" dataKey="f2" stroke="none" strokeWidth={0} dot={{r: 4, fill: 'var(--color-cyan)', strokeWidth: 0}} activeDot={{r: 6}} connectNulls={false} />
+                  <Line type="monotone" name="F3 — Terceiro modo" dataKey="f3" stroke="none" strokeWidth={0} dot={{r: 4, fill: 'var(--color-emerald)', strokeWidth: 0}} activeDot={{r: 6}} connectNulls={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
