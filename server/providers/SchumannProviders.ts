@@ -89,7 +89,13 @@ export class SchumannProvider {
           derived_from_image: true,
           is_primary_measurement: false,
           is_demo: false,
-          collected_at: new Date().toISOString()
+          collected_at: new Date().toISOString(),
+          relativeIntensity: json.fundamental?.intensidade ? {
+            value: json.fundamental.intensidade,
+            scale: "0-100",
+            calibrated: false,
+            source: "spectrogram_color_scale"
+          } : undefined
         };
 
         const result = { success: true, data, timestamp: updatedAt };

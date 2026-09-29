@@ -21,6 +21,12 @@ export interface CurrentResonanceData {
   processing_version?: string;
   is_primary_measurement?: boolean;
   is_demo?: boolean;
+  relativeIntensity?: {
+    value: number;
+    scale: string;
+    calibrated: boolean;
+    source: string;
+  };
 }
 
 export interface Station {

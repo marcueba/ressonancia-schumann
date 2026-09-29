@@ -17,6 +17,12 @@ export interface NormalizedSchumannData {
   derived_from_image?: boolean;
   is_primary_measurement?: boolean;
   is_demo?: boolean;
+  relativeIntensity?: {
+    value: number;
+    scale: string;
+    calibrated: boolean;
+    source: string;
+  };
 }
 
 export interface ProviderResponse<T> {
