@@ -140,7 +140,7 @@ export function HistoryPage() {
         <div className="h-[400px] w-full p-6 flex flex-col items-center justify-center text-center border border-border rounded-lg bg-surface">
           <h2 className="text-xl font-medium text-text-main mb-2">Nenhuma observação válida disponível neste período.</h2>
           <p className="text-text-muted max-w-lg">
-            A fonte primária não registrou medições válidas persistidas no intervalo selecionado.
+            A fonte primária não registrou observações válidas persistidas no intervalo selecionado.
           </p>
         </div>
       ) : (
@@ -230,7 +230,7 @@ export function HistoryPage() {
                     </p>
                   ) : (
                     <p className="text-sm text-text-muted">
-                      Os dados disponíveis consistem nas medições persistidas em banco até o momento.
+                      Os dados disponíveis consistem nas observações persistidas em banco até o momento.
                     </p>
                   )}
                   {data[0]?.sourceType && (

@@ -40,7 +40,7 @@ export function ERI() {
       <div className="mb-8">
         <h1 className="text-3xl font-light tracking-wide text-text-main mb-2">Earth Resonance Index (ERI)</h1>
         <p className="text-text-muted max-w-3xl leading-relaxed">
-          O ERI é um indicador experimental desenvolvido por este observatório. Seu cálculo combina a atividade geomagnética (Kp) com parâmetros de atividade ELF quando uma fonte primária de dados está disponível. Na ausência de uma medição ELF primária conectada, o indicador utiliza apenas os dados geomagnéticos disponíveis, conforme a versão atual do algoritmo. Não é uma métrica acadêmica consolidada nem uma medida direta da intensidade da Ressonância de Schumann.
+          O ERI é um indicador experimental desenvolvido por este observatório. Seu cálculo combina a atividade geomagnética (Kp) com parâmetros de atividade ELF quando uma fonte primária de dados está disponível. Na ausência de uma observação ELF primária conectada, o indicador utiliza apenas os dados geomagnéticos disponíveis, conforme a versão atual do algoritmo. Não é uma métrica acadêmica consolidada nem uma observação direta da intensidade da Ressonância de Schumann.
         </p>
       </div>
 

@@ -41,7 +41,7 @@ export function Solar() {
       <div className="mb-8">
         <h1 className="text-3xl font-light tracking-wide text-text-main mb-2">Atividade Solar</h1>
         <p className="text-text-muted max-w-3xl leading-relaxed">
-          A atividade solar e o clima espacial influenciam o ambiente eletromagnético e ionosférico da Terra. Esses dados são apresentados aqui como contexto para a análise das condições geofísicas, não como uma medição direta da Ressonância de Schumann.
+          A atividade solar e o clima espacial influenciam o ambiente eletromagnético e ionosférico da Terra. Esses dados são apresentados aqui como contexto para a análise das condições geofísicas, não como uma observação direta da Ressonância de Schumann.
         </p>
       </div>
 
@@ -79,7 +79,7 @@ export function Solar() {
 
       <div className="bg-surface-hover/20 border border-border/50 rounded-lg p-6 mt-6">
         <p className="text-sm text-text-muted text-center italic">
-          Os dados solares apresentados nesta página são contexto de atividade solar. Não constituem medições diretas da Ressonância de Schumann.
+          Os dados solares apresentados nesta página são contexto de atividade solar. Não constituem observações diretas da Ressonância de Schumann.
         </p>
       </div>
     </div>

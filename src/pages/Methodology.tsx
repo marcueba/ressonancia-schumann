@@ -26,7 +26,7 @@ export function Methodology() {
             <div className="p-4 bg-surface-hover/50 border border-border rounded-md mt-4">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-text-main mb-3">Cadeia Real de Proveniência</h3>
               <ol className="list-decimal list-inside space-y-2 ml-1 text-text-muted">
-                <li><span className="font-medium text-text-main">Tomsk (SOSRFF):</span> Observação original do campo ELF (Space Observing System, Universidade de Tomsk).</li>
+                <li><span className="font-medium text-text-main">Tomsk (SOSRFF):</span> Observação original do campo ELF (<a href="http://sosrff.tsu.ru/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Space Observing System, Universidade de Tomsk</a>).</li>
                 <li><span className="font-medium text-text-main">Representação em Espectrograma:</span> Dados transformados visualmente pela fonte russa.</li>
                 <li><span className="font-medium text-text-main">Fonte Secundária:</span> Extração automatizada e processamento da imagem em formato JSON pela "API RessonanciaSchumannHoje".</li>
                 <li><span className="font-medium text-text-main">Collector (Nosso Backend):</span> Captura pontual e tratamento contra anomalias.</li>
@@ -47,14 +47,14 @@ export function Methodology() {
           <Card className="p-6">
             <CardTitle as="h3" className="mb-2">Geomagnetismo (NOAA/SWPC)</CardTitle>
             <p className="text-sm text-text-muted leading-relaxed">
-              O índice Kp (planetário) mede o grau de perturbação no campo magnético da Terra provocado pelo vento solar. Os dados são provenientes do <strong>Space Weather Prediction Center (NOAA/SWPC)</strong>.
+              O índice Kp (planetário) mede o grau de perturbação no campo magnético da Terra provocado pelo vento solar. Os dados são provenientes do <strong><a href="https://www.swpc.noaa.gov/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Space Weather Prediction Center (NOAA/SWPC)</a></strong>.
             </p>
           </Card>
           
           <Card className="p-6">
             <CardTitle as="h3" className="mb-2">Atividade Solar (NOAA)</CardTitle>
             <p className="text-sm text-text-muted leading-relaxed">
-              O Fluxo Solar (F10.7) e as Manchas Solares (Sunspots) determinam a ionização da alta atmosfera, base do teto refletor que cria as ressonâncias.
+              O fluxo solar F10.7 e o número de manchas solares são indicadores da atividade solar e ajudam a contextualizar condições que podem influenciar a ionosfera.
             </p>
           </Card>
         </div>
@@ -76,7 +76,7 @@ export function Methodology() {
             <div className="p-3 bg-surface border border-border rounded text-xs mb-2">
               <p className="font-medium text-text-main">Referência:</p>
               <p>Salinas et al. "Schumann resonance data processing programs and four-year measurements from Sierra Nevada ELF station"</p>
-              <p><em>Computers & Geosciences 165 (2022) 105148. DOI: 10.1016/j.cageo.2022.105148</em></p>
+              <p><em>Computers & Geosciences 165 (2022) 105148. <a href="https://doi.org/10.1016/j.cageo.2022.105148" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">DOI: 10.1016/j.cageo.2022.105148</a></em></p>
             </div>
             <p>
               <strong>Nota:</strong> A estação de Sierra Nevada <em>não é</em> a fonte dos dados atuais exibidos no Dashboard. O estudo é citado estritamente como nossa base conceitual e científica para demonstrar como medições ELF instrumentais puras podem ser processadas adequadamente.
@@ -103,7 +103,7 @@ export function Methodology() {
             <li><strong>Dependência Externa:</strong> O sistema depende do funcionamento ativo da fonte externa em Tomsk e das APIs processadoras secundárias.</li>
             <li><strong>Dados Derivados:</strong> As frequências exibidas resultam do processamento computacional da imagem de um espectrograma em vez de processamento matemático de uma série temporal ELF bruta.</li>
             <li><strong>Lacunas Instrumentais:</strong> Os dados armazenados neste momento não dispõem de aferição de Amplitude validadas nem de Largura da Ressonância (Q-factor).</li>
-            <li><strong>Falta de Orientação do Campo:</strong> A observação primária funde os canais ortogonais, não sendo possível hoje separar os vetores NS e EW do campo magnético.</li>
+            <li><strong>Falta de Orientação do Campo:</strong> Os dados atualmente disponíveis no observatório não preservam informação separada das orientações NS/EW.</li>
             <li><strong>Sincronia Temporal (Timestamps):</strong> Podem ocorrer diferenças de timestamp de dezenas de minutos entre os dados Schumann, Solares e Geomagnéticos. Eles não descrevem necessariamente um snapshot perfeitamente cravado do mesmo instante global.</li>
             <li><strong>Inferência Causal:</strong> O observatório cataloga e consolida fenômenos, mas não se destina a realizar estatísticas preditivas, nem valida isoladamente relação causal entre anomalias ELF, biologia e clima espacial.</li>
           </ul>

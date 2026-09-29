@@ -85,7 +85,8 @@ export function CurrentResonance() {
 
         <Card>
           <CardHeader>
-            <CardTitle as="h2">Referência teórica</CardTitle>
+            <CardTitle as="h2">Médias Históricas / Teóricas</CardTitle>
+          <CardDescription>Valores não constituem observações.</CardDescription>
           </CardHeader>
           <div className="space-y-4">
             {theoreticalModes.map((mode, i) => (

@@ -48,7 +48,7 @@ export function Dashboard() {
         <div className="absolute inset-0 bg-primary-glow blur-[120px] rounded-full opacity-20 pointer-events-none" />
         <h1 className="text-4xl md:text-5xl font-light tracking-[0.2em] text-text-main mb-4">MONITORAMENTO DA RESSONÂNCIA DE SCHUMANN</h1>
         <p className="text-lg text-text-muted font-light tracking-wide max-w-4xl mx-auto">
-          O sistema está operacional, mas as medições eletromagnéticas ELF primárias ainda não estão conectadas. Os dados geomagnéticos, solares e contextuais apresentados possuem suas respectivas fontes identificadas.
+          O sistema está operacional, mas as observações eletromagnéticas ELF primárias ainda não estão conectadas. Os dados geomagnéticos, solares e contextuais apresentados possuem suas respectivas fontes identificadas.
         </p>
         <div className="mt-6 flex justify-center">
           <div className="px-4 py-2 bg-rose-900/30 border border-rose-700/50 rounded-full text-rose-300 text-sm font-medium">
@@ -103,7 +103,7 @@ export function Dashboard() {
           <div className="h-[400px] w-full p-6 pt-8 relative">
             {current.is_demo && (
                <div className="absolute top-2 right-4 z-10 px-3 py-1 bg-amber-900/30 text-amber-500 rounded text-xs border border-amber-800/50">
-                 MOCK_GENERATOR VISIBLE (DEV MODE)
+                 MODO DE DESENVOLVIMENTO (DADOS GERADOS LOCALMENTE)
                </div>
             )}
             <ResponsiveContainer width="100%" height="100%">
