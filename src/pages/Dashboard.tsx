@@ -232,14 +232,18 @@ export function Dashboard() {
                 <div className="text-sm text-rose-400 flex-1 flex items-center justify-center">Dados indisponíveis no momento.</div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 gap-4 mb-4 mt-2">
+                  <div className="grid grid-cols-3 gap-4 mb-4 mt-2">
                     <div>
                       <div className="text-[10px] text-text-muted uppercase mb-1">Vento Solar</div>
-                      <div className="text-2xl font-light text-text-main">{solar.solarWindSpeed != null ? `${solar.solarWindSpeed}` : '--'} <span className="text-sm text-text-muted">km/s</span></div>
+                      <div className="text-2xl font-light text-text-main">{solar.solarWindSpeed != null ? `${solar.solarWindSpeed}` : '--'} <span className="text-[10px] text-text-muted">km/s</span></div>
                     </div>
                     <div>
                       <div className="text-[10px] text-text-muted uppercase mb-1">IMF (Bz)</div>
-                      <div className="text-2xl font-light text-text-main">{solar.bz != null ? `${solar.bz}` : '--'} <span className="text-sm text-text-muted">nT</span></div>
+                      <div className="text-2xl font-light text-text-main">{solar.bz != null ? `${solar.bz}` : '--'} <span className="text-[10px] text-text-muted">nT</span></div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-text-muted uppercase mb-1">Raios X</div>
+                      <div className="text-2xl font-light text-text-main">{solar.currentXRay?.flareClass || '--'}</div>
                     </div>
                   </div>
                   

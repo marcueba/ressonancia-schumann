@@ -49,13 +49,36 @@ export interface GeomagneticData {
   dataSource: string;
 }
 
+export interface XRayDataPoint {
+  time_tag: string;
+  flux: number;
+  energy: string;
+  satellite: number;
+}
+
+export interface CurrentXRay {
+  flux: number;
+  energy: string;
+  satellite: number;
+  flareClass: string;
+  timestamp: string;
+}
+
 export interface SolarData {
-  solarFlux: number;
-  sunspots: number;
-  flares: string;
+  solarFlux: number | null;
+  sunspots: number | null;
+  flares: string | null;
   status: string;
   dataSource: string;
-  timestamp: string;
+  timestamp: string | null;
+  solarWindSpeed?: number | null;
+  protonDensity?: number | null;
+  bz?: number | null;
+  bt?: number | null;
+  solarWindTimestamp?: string | null;
+  imfTimestamp?: string | null;
+  currentXRay?: CurrentXRay | null;
+  xrayHistory?: XRayDataPoint[];
 }
 
 export interface HistoricalDataPoint {

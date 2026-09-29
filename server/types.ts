@@ -27,3 +27,53 @@ export interface ProviderResponse<T> {
   cached?: boolean;
   timestamp: string;
 }
+
+export interface XRayDataPoint {
+  time_tag: string;
+  flux: number;
+  energy: string;
+  satellite: number;
+}
+
+export interface CurrentXRay {
+  flux: number;
+  energy: string;
+  satellite: number;
+  flareClass: string;
+  timestamp: string;
+}
+
+export interface NoaaRtswWind {
+  time_tag: string;
+  proton_speed: number | null;
+  proton_density: number | null;
+}
+
+export interface NoaaRtswMag {
+  time_tag: string;
+  bz_gsm: number | null;
+  bt: number | null;
+}
+
+export interface NoaaGoesXray {
+  time_tag: string;
+  satellite: number;
+  flux: number;
+  energy: string;
+}
+
+export interface SolarData {
+  solarFlux: number | null;
+  sunspots: number | null;
+  flares: string | null;
+
+  status: string;
+  solarWindSpeed?: number | null;
+  protonDensity?: number | null;
+  bz?: number | null;
+  bt?: number | null;
+  solarWindTimestamp?: string | null;
+  imfTimestamp?: string | null;
+  currentXRay?: CurrentXRay | null;
+  xrayHistory?: XRayDataPoint[];
+}
