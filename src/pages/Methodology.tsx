@@ -28,11 +28,15 @@ export function Methodology() {
               <ol className="list-decimal list-inside space-y-2 ml-1 text-text-muted">
                 <li><span className="font-medium text-text-main">Tomsk (SOSRFF):</span> Observação original do campo ELF (<a href="http://sosrff.tsu.ru/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Space Observing System, Universidade de Tomsk</a>).</li>
                 <li><span className="font-medium text-text-main">Representação em Espectrograma:</span> Dados transformados visualmente pela fonte russa.</li>
-                <li><span className="font-medium text-text-main">Fonte Secundária:</span> Extração automatizada e processamento da imagem em formato JSON pela "API RessonanciaSchumannHoje".</li>
+                <li><span className="font-medium text-text-main">Fonte Secundária:</span> Extração automatizada e processamento da imagem em formato JSON (Dataset JSON — Ressonância Schumann Hoje).</li>
                 <li><span className="font-medium text-text-main">Collector (Nosso Backend):</span> Captura pontual e tratamento contra anomalias.</li>
                 <li><span className="font-medium text-text-main">Supabase:</span> Armazenamento em banco de dados estruturado com validação de timestamps unívocos.</li>
                 <li><span className="font-medium text-text-main">Interface:</span> Gráficos e painéis apresentados neste observatório.</li>
               </ol>
+            </div>
+            
+            <div className="p-4 mt-4 text-sm text-text-muted bg-surface-hover/30 rounded-md border border-border">
+              <span className="font-medium text-text-main">Fonte dos dados derivados:</span> <a href="https://ressonanciaschumannhoje.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Ressonância Schumann Hoje</a>, a partir do espectrograma público do Space Observing System (SOS-70), Universidade Estatal de Tomsk.
             </div>
             <p className="text-xs mt-2 italic">
               A arquitetura atual permite futuramente incorporar séries temporais ELF instrumentais brutas e processamento próprio (Evolução Metodológica).
