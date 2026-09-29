@@ -85,7 +85,7 @@ export class SchumannProvider {
           source_type: 'derived_spectrogram',
           source_url: 'https://sos70.ru/provider.php?file=shm.jpg',
           processing_method: 'Processamento de Imagem Externo',
-          processing_version: 'RessonanciaSchumannHoje/1.0',
+          processing_version: 'API RessonanciaSchumannHoje',
           derived_from_image: true,
           is_primary_measurement: false,
           is_demo: false,
