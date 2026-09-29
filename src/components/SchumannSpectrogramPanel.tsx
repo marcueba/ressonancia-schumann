@@ -17,10 +17,18 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
   // We use our local proxy to avoid CORS/CORB issues and ensure image/jpeg content-type.
   // We append a timestamp rounded to 5 minutes to bust browser cache gracefully.
   useEffect(() => {
-    const timeBucket = Math.floor(Date.now() / (1000 * 300)); // 5 minutes bucket
-    setImgUrl(`/api/spectrogram/tomsk?t=${timeBucket}`);
-    setHasError(false);
-    setLoading(true);
+    const fetchImage = () => {
+      const timeBucket = Math.floor(Date.now() / (1000 * 300)); // 5 minutes bucket
+      setImgUrl(`/api/spectrogram/tomsk?t=${timeBucket}`);
+      setHasError(false);
+      setLoading(true);
+    };
+    
+    fetchImage();
+    
+    // Refresh a cada 5 minutos
+    const interval = setInterval(fetchImage, 300000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleImageError = () => {
@@ -121,6 +129,9 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
           </div>
 
           <div className="mt-8 pt-4 border-t border-border space-y-2">
+            <p className="text-[10px] text-text-muted leading-tight mb-4">
+              * O timestamp da imagem de origem não é fornecido separadamente pela fonte.
+            </p>
             <h4 className="text-[10px] uppercase tracking-widest text-text-muted mb-2">Proveniência</h4>
             <div className="text-xs flex justify-between">
               <span className="text-text-muted">Instrumental:</span>
@@ -135,7 +146,7 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
               <span className="font-medium text-text-main">Externo</span>
             </div>
             <div className="text-xs flex justify-between">
-              <span className="text-text-muted">Horário Extração:</span>
+              <span className="text-text-muted">Horário observação derivada:</span>
               <span className="font-medium text-primary">{timeStr}</span>
             </div>
           </div>
