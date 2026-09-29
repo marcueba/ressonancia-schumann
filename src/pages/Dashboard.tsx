@@ -1,10 +1,12 @@
 import { useSEO } from '../hooks/useSEO';
 import { useEffect, useState } from 'react';
 import { dataProvider } from '../data/dataProvider';
-import { CurrentResonanceData, EarthResonanceIndex, GeomagneticData, SolarData } from '../types';
+import { CurrentResonanceData, EarthResonanceIndex, GeomagneticData, SolarData, HistoricalDataPoint } from '../types';
 import { Card, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Activity, Radio, Sun, Compass, Globe2 } from 'lucide-react';
+import { SchumannTimelineChart, Range } from '../components/SchumannTimelineChart';
+
 
 export function Dashboard() {
   useSEO({ title: "Ressonância Schumann | Observatório da Terra", description: "Observatório da Terra dedicado ao monitoramento da Ressonância de Schumann, atividade geomagnética e atividade solar, com transparência sobre fontes e metodologia.", path: "/" });
@@ -14,6 +16,11 @@ export function Dashboard() {
   const [eri, setEri] = useState<EarthResonanceIndex | null>(null);
   const [geo, setGeo] = useState<GeomagneticData | null>(null);
   const [solar, setSolar] = useState<SolarData | null>(null);
+  
+  const [historyData, setHistoryData] = useState<HistoricalDataPoint[]>([]);
+  const [historyRange, setHistoryRange] = useState<Range>('7d');
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -38,6 +45,21 @@ export function Dashboard() {
     const interval = setInterval(load, 300000); // 5 mins
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    setHistoryLoading(true);
+    setHistoryError(false);
+    dataProvider.getHistoricalData(historyRange)
+      .then(res => {
+        setHistoryData(res);
+        setHistoryLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setHistoryError(true);
+        setHistoryLoading(false);
+      });
+  }, [historyRange]);
 
   
 
@@ -87,6 +109,18 @@ export function Dashboard() {
 
       
 
+      
+      
+      <div className="mt-8 mb-8">
+        <SchumannTimelineChart 
+          data={historyData}
+          loading={historyLoading}
+          error={historyError}
+          range={historyRange}
+          onRangeChange={setHistoryRange}
+          showCoverageStats={false}
+        />
+      </div>
       
       <div className="space-y-4 mt-8 mb-8">
         <div className="flex flex-col gap-1 mb-4">
