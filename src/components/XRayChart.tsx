@@ -5,7 +5,7 @@ interface XRayChartProps {
   data: XRayDataPoint[];
 }
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: XRayDataPoint }[] }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     const flux = data.flux;

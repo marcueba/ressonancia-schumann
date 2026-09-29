@@ -237,7 +237,7 @@ export class NoaaProvider {
                   // Add a null point slightly after t1 to break the line visually
                   xrayHistory.push({
                     time_tag: new Date(t1 + 1000).toISOString(),
-                    flux: null as any,
+                    flux: null,
                     energy: rawHistory[i].energy,
                     satellite: rawHistory[i].satellite
                   });

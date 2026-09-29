@@ -22,7 +22,7 @@ const getGScale = (kp: number) => {
   return '';
 };
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: KpDataPoint }[] }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     const kp = data.kp;
