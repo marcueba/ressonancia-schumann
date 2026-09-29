@@ -25,7 +25,6 @@ export function ObservationalCalendar() {
   const currentMaxMonth = `${spNow.getFullYear()}-${(spNow.getMonth() + 1).toString().padStart(2, '0')}`;
 
   // Earliest observational month (approximate launch date of the platform, say January 2026 for now, or don't restrict too much but keep it reasonable)
-  const minMonth = '2020-01'; // Can navigate back infinitely but data will just be empty. Let's just allow back navigation safely.
 
   useEffect(() => {
     async function fetchMonthData() {

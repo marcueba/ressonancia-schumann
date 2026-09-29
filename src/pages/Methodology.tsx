@@ -106,6 +106,7 @@ export function Methodology() {
           <ul className="list-disc list-inside space-y-2 text-sm text-text-muted">
             <li><strong>Dependência Externa:</strong> O sistema depende do funcionamento ativo da fonte externa em Tomsk e das APIs processadoras secundárias.</li>
             <li><strong>Dados Derivados:</strong> As frequências exibidas resultam do processamento computacional da imagem de um espectrograma em vez de processamento matemático de uma série temporal ELF bruta.</li>
+            <li><strong>Apresentação do Espectrograma:</strong> A imagem do espectrograma exibida na aplicação é apresentada apenas como <em>referência visual da fonte de origem</em>. Nosso observatório <strong>não converte suas cores em amplitude física, "energia" ou "poder" (Power Index)</strong>, mantendo assim um rigor conservador que evita interpretações pseudo-científicas das anomalias de cor.</li>
             <li><strong>Lacunas Instrumentais:</strong> Os dados armazenados neste momento não dispõem de aferição de Amplitude validadas nem de Largura da Ressonância (Q-factor).</li>
             <li><strong>Falta de Orientação do Campo:</strong> Os dados atualmente disponíveis no observatório não preservam informação separada das orientações NS/EW.</li>
             <li><strong>Sincronia Temporal (Timestamps):</strong> Podem ocorrer diferenças de timestamp de dezenas de minutos entre os dados Schumann, Solares e Geomagnéticos. Eles não descrevem necessariamente um snapshot perfeitamente cravado do mesmo instante global.</li>

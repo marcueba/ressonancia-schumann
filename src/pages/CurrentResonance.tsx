@@ -5,6 +5,7 @@ import { CurrentResonanceData } from '../types';
 import { Card, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Activity, Info } from 'lucide-react';
+import { SchumannSpectrogramPanel } from '../components/SchumannSpectrogramPanel';
 
 export function CurrentResonance() {
   useSEO({ title: "Ressonância de Schumann em Tempo Real | Observatório da Terra", description: "Acompanhe o estado atual do monitoramento da Ressonância de Schumann e conheça os limites e a disponibilidade das fontes ELF utilizadas pelo observatório.", path: "/atual" });
@@ -98,6 +99,17 @@ export function CurrentResonance() {
           </div>
         </Card>
       </div>
+      
+      {data && (
+        <div className="mt-6">
+          <SchumannSpectrogramPanel 
+            currentF1={data.fundamental.frequency}
+            currentF2={data.mode2.frequency}
+            currentF3={data.mode3.frequency}
+            timestamp={data.timestamp}
+          />
+        </div>
+      )}
       
       {data && data.derived_from_image && (
         <Card className="mt-6 bg-surface/50 border-primary/20">
