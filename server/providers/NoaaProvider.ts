@@ -1,9 +1,17 @@
-import { ProviderResponse, SolarData, NoaaRtswWind, NoaaRtswMag, NoaaGoesXray, XRayDataPoint, CurrentXRay } from '../types';
+import { ProviderResponse, SolarData, NoaaRtswWind, NoaaRtswMag, NoaaGoesXray, XRayDataPoint, CurrentXRay, KpDataPoint } from '../types';
+
+export interface NoaaKp {
+  time_tag: string;
+  Kp: string;
+  a_running: number;
+  station_count: number;
+}
 import { apiCache } from '../services/cache';
 
 export interface GeoData {
-  currentKp: number;
+  currentKp: number | null;
   recentKp: { time: string; kp: number }[];
+  history: KpDataPoint[];
   status: string;
 }
 
@@ -40,16 +48,7 @@ export class NoaaProvider {
     if (!isLive) {
       return {
         success: true,
-        data: { currentKp: 3, recentKp: [
-          { time: new Date(Date.now() - 21*3600000).toISOString(), kp: 2 },
-          { time: new Date(Date.now() - 18*3600000).toISOString(), kp: 1 },
-          { time: new Date(Date.now() - 15*3600000).toISOString(), kp: 2 },
-          { time: new Date(Date.now() - 12*3600000).toISOString(), kp: 3 },
-          { time: new Date(Date.now() - 9*3600000).toISOString(), kp: 3 },
-          { time: new Date(Date.now() - 6*3600000).toISOString(), kp: 2 },
-          { time: new Date(Date.now() - 3*3600000).toISOString(), kp: 4 },
-          { time: new Date().toISOString(), kp: 3 }
-        ], status: 'Instável (DEMO)' },
+        data: { currentKp: 3, recentKp: [], history: [], status: 'Instável (DEMO)' },
         timestamp: new Date().toISOString()
       };
     }
@@ -66,30 +65,32 @@ export class NoaaProvider {
         }
         if (!response.ok) throw new Error('NOAA API failure');
         
-        const data: any[] = await response.json();
+        const data: NoaaKp[] = await response.json();
         
         if (!Array.isArray(data) || data.length === 0) throw new Error('NOAA returned empty dataset');
 
-        const recentItems = data.slice(-8);
-        const recentKp = recentItems.map(item => ({
-          time: item.time_tag,
+        // Extract the last 72 hours (since it's 3-hour data, that's 24 items)
+        const recentItems = data.slice(-24);
+        
+        const history = recentItems.map(item => ({
+          time_tag: item.time_tag,
           kp: parseFloat(item.Kp)
-        }));
+        })).filter(k => !isNaN(k.kp));
+
+        const recentKp = history.slice(-8).map(h => ({ time: h.time_tag, kp: h.kp }));
+
         const currentKpObj = data[data.length - 1];
         const currentKp = currentKpObj && currentKpObj.Kp !== undefined ? parseFloat(currentKpObj.Kp) : null;
 
-        if (currentKp === null || isNaN(currentKp)) {
-           throw new Error('Valor Kp indisponível na fonte');
-        }
-
         const geoData: GeoData = {
           currentKp,
-          recentKp: recentKp.filter(k => !isNaN(k.kp)),
-          status: this.getStatusFromKp(currentKp)
+          recentKp,
+          history,
+          status: currentKp !== null ? this.getStatusFromKp(currentKp) : 'Indisponível'
         };
 
-        const result = { success: true, data: geoData, timestamp: currentKpObj.time_tag || new Date().toISOString() };
-        apiCache.set(cacheKey, result, 300);
+        const result = { success: true, data: geoData, timestamp: currentKpObj?.time_tag || new Date().toISOString() };
+        apiCache.set(cacheKey, result, 900); // 15 minutos cache para janela de 3h
         return result;
 
       } catch (error: any) {
@@ -217,12 +218,33 @@ export class NoaaProvider {
             // Filter for 0.1-0.8nm band (typically used for flare classification)
             const primaryBand = dataXray.filter(d => d.energy === '0.1-0.8nm');
             
-            xrayHistory = primaryBand.map(d => ({
+            
+            const rawHistory = primaryBand.map(d => ({
               time_tag: d.time_tag,
               flux: d.flux,
               energy: d.energy,
               satellite: d.satellite
             }));
+            
+            // Insert nulls for gaps > 90 seconds
+            xrayHistory = [];
+            for (let i = 0; i < rawHistory.length; i++) {
+              xrayHistory.push(rawHistory[i]);
+              if (i < rawHistory.length - 1) {
+                const t1 = new Date(rawHistory[i].time_tag).getTime();
+                const t2 = new Date(rawHistory[i+1].time_tag).getTime();
+                if (t2 - t1 > 90000) {
+                  // Add a null point slightly after t1 to break the line visually
+                  xrayHistory.push({
+                    time_tag: new Date(t1 + 1000).toISOString(),
+                    flux: null as any,
+                    energy: rawHistory[i].energy,
+                    satellite: rawHistory[i].satellite
+                  });
+                }
+              }
+            }
+
 
             if (primaryBand.length > 0) {
               const latest = primaryBand[primaryBand.length - 1];

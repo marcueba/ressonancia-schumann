@@ -10,6 +10,8 @@ const CustomTooltip = ({ active, payload }: any) => {
     const data = payload[0].payload;
     const flux = data.flux;
     
+    if (flux === null || flux === undefined) return null;
+    
     // Classify
     let flareClass = '';
     if (flux < 1e-7) flareClass = `A${(flux * 1e8).toFixed(1)}`;

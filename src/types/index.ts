@@ -42,22 +42,29 @@ export interface EarthResonanceIndex {
   status: string;
 }
 
+export interface KpDataPoint {
+  time_tag: string;
+  kp: number;
+}
+
 export interface GeomagneticData {
-  currentKp: number;
+  currentKp: number | null;
   recentKp: { time: string; kp: number }[];
+  history: KpDataPoint[];
   status: string;
   dataSource: string;
+  timestamp?: string;
 }
 
 export interface XRayDataPoint {
   time_tag: string;
-  flux: number;
+  flux: number | null;
   energy: string;
   satellite: number;
 }
 
 export interface CurrentXRay {
-  flux: number;
+  flux: number | null;
   energy: string;
   satellite: number;
   flareClass: string;

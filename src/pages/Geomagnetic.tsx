@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { dataProvider } from '../data/dataProvider';
 import { GeomagneticData } from '../types';
 import { Card } from '../components/ui/Card';
+import { KpChart } from '../components/KpChart';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Compass } from 'lucide-react';
 

@@ -30,13 +30,13 @@ export interface ProviderResponse<T> {
 
 export interface XRayDataPoint {
   time_tag: string;
-  flux: number;
+  flux: number | null;
   energy: string;
   satellite: number;
 }
 
 export interface CurrentXRay {
-  flux: number;
+  flux: number | null;
   energy: string;
   satellite: number;
   flareClass: string;
@@ -58,7 +58,7 @@ export interface NoaaRtswMag {
 export interface NoaaGoesXray {
   time_tag: string;
   satellite: number;
-  flux: number;
+  flux: number | null;
   energy: string;
 }
 
@@ -76,4 +76,9 @@ export interface SolarData {
   imfTimestamp?: string | null;
   currentXRay?: CurrentXRay | null;
   xrayHistory?: XRayDataPoint[];
+}
+
+export interface KpDataPoint {
+  time_tag: string;
+  kp: number;
 }
