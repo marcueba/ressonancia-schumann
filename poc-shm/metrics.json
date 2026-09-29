@@ -1,0 +1,42 @@
+{
+  "hash": "7a83722a39dca33f71d3d4861c56fc82c4cd1fe2ad0d1687f96d491d577d4a44",
+  "size_bytes": 244794,
+  "dimensions": "1540x460",
+  "geometry": {
+    "x_min": 59,
+    "x_max": 1531,
+    "y_min": 29,
+    "y_max": 430
+  },
+  "y_resolution_hz_per_px": 0.09975062344139651,
+  "x_resolution_min_per_px": 2.9347826086956523,
+  "distributions": {
+    "15m": {
+      "total": 294,
+      "f1_valid": 119,
+      "f1_min": 7.0,
+      "f1_max": 8.9,
+      "f1_med": 8.0,
+      "f2_valid": 149,
+      "f3_valid": 158
+    },
+    "30m": {
+      "total": 147,
+      "f1_valid": 54,
+      "f1_min": 7.0,
+      "f1_max": 8.9,
+      "f1_med": 8.0,
+      "f2_valid": 48,
+      "f3_valid": 45
+    },
+    "60m": {
+      "total": 73,
+      "f1_valid": 19,
+      "f1_min": 7.4,
+      "f1_max": 8.7,
+      "f1_med": 8.0,
+      "f2_valid": 10,
+      "f3_valid": 7
+    }
+  }
+}
