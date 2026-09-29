@@ -14,7 +14,6 @@ export function Dashboard() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [current, setCurrent] = useState<CurrentResonanceData | null>(null);
-  const [eri, setEri] = useState<EarthResonanceIndex | null>(null);
   const [geo, setGeo] = useState<GeomagneticData | null>(null);
   const [solar, setSolar] = useState<SolarData | null>(null);
   
@@ -33,7 +32,6 @@ export function Dashboard() {
           dataProvider.getSolarData()
         ]);
         setCurrent(c);
-        setEri(e);
         setGeo(g);
         setSolar(s);
       } catch (err) {
@@ -70,23 +68,28 @@ export function Dashboard() {
         <div className="absolute inset-0 bg-primary-glow blur-[120px] rounded-full opacity-20 pointer-events-none" />
         <h1 className="text-4xl md:text-5xl font-light tracking-[0.2em] text-text-main mb-4">MONITORAMENTO DA RESSONÂNCIA DE SCHUMANN</h1>
         <p className="text-lg text-text-muted font-light tracking-wide max-w-4xl mx-auto">
-          O sistema está operacional, mas as observações eletromagnéticas ELF primárias ainda não estão conectadas. Os dados geomagnéticos, solares e contextuais apresentados possuem suas respectivas fontes identificadas.
+          O sistema está operacional. {current ? 'Fonte ELF primária direta ainda não conectada.' : 'Observações eletromagnéticas ELF primárias ainda não estão conectadas.'} Os dados geomagnéticos, solares e contextuais apresentados possuem suas respectivas fontes identificadas.
         </p>
         <div className="mt-6 flex justify-center">
           <div className="px-4 py-2 bg-rose-900/30 border border-rose-700/50 rounded-full text-rose-300 text-sm font-medium">
-            Status: Fonte ELF primária não conectada
+            {current ? 'Status: Observações derivadas disponíveis' : 'Status: Fonte ELF primária não conectada'}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="flex flex-col items-center justify-center py-8 text-center bg-surface-hover/50 border-primary/20 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-primary/40" />
           <Radio className="w-8 h-8 text-primary mb-4 opacity-50" />
           <div className="text-4xl font-light text-text-main mb-1 tracking-tight">
-            -- <span className="text-xl text-text-muted">Hz</span>
+            {current?.fundamental?.frequency ? current.fundamental.frequency.toFixed(2) : '--'} <span className="text-xl text-text-muted">Hz</span>
           </div>
-          <div className="text-sm tracking-widest text-text-muted uppercase">Frequência Fundamental</div>
+          <div className="text-sm tracking-widest text-text-muted uppercase">
+            {current ? 'F1 — FREQUÊNCIA DERIVADA' : 'Frequência Fundamental'}
+          </div>
+          {current && (
+            <div className="text-[10px] text-text-muted mt-2">Dado derivado de espectrograma</div>
+          )}
         </Card>
 
         <Card className="flex flex-col items-center justify-center py-8 text-center bg-surface-hover/20">
@@ -95,23 +98,10 @@ export function Dashboard() {
             --
           </div>
           <div className="text-sm tracking-widest text-text-muted uppercase">Amplitude</div>
-        </Card>
-
-        <Card className="flex flex-col items-center justify-center py-8 text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gold/40" />
-          <Globe2 className="w-8 h-8 text-gold mb-4" />
-          <div className="text-4xl font-light text-text-main mb-1 tracking-tight flex items-baseline gap-1">
-            {eri ? eri.score : <span className="text-xl text-text-muted">Não calculado</span>} {eri && <span className="text-xl text-text-muted">/100</span>}
-          </div>
-          <div className="text-sm tracking-widest text-text-muted uppercase mb-2">Earth Resonance Index</div>
-          {eri && <StatusBadge status={eri.status} />}
+          <div className="text-[10px] text-text-muted mt-2">Amplitude física indisponível</div>
         </Card>
       </div>
 
-      
-
-      
-      
       <div className="mt-8 mb-8">
         <SchumannTimelineChart 
           data={historyData}
