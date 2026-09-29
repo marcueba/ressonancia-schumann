@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
 import { useEffect, useState } from 'react';
 import { dataProvider } from '../data/dataProvider';
@@ -77,7 +78,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="flex flex-col items-center justify-center py-8 text-center bg-surface-hover/50 border-primary/20 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-primary/40" />
           <Radio className="w-8 h-8 text-primary mb-4 opacity-50" />
@@ -100,6 +101,20 @@ export function Dashboard() {
           <div className="text-sm tracking-widest text-text-muted uppercase">Amplitude</div>
           <div className="text-[10px] text-text-muted mt-2">Amplitude física indisponível</div>
         </Card>
+
+        <Link to="/indice" className="block">
+        <Card className="flex flex-col items-center justify-center py-8 text-center relative overflow-hidden hover:bg-surface-hover/30 transition-colors h-full">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gold/40" />
+          <Globe2 className="w-8 h-8 text-gold mb-4" />
+          <div className="text-2xl font-light text-text-main mb-1 tracking-tight">
+            Em desenvolvimento
+          </div>
+          <div className="text-sm tracking-widest text-text-muted uppercase mb-2">Earth Resonance Index</div>
+          <div className="px-3 py-1 rounded-full text-xs font-medium border bg-gold/10 text-gold border-gold/20">
+            ÍNDICE EXPERIMENTAL
+          </div>
+        </Card>
+        </Link>
       </div>
 
       <div className="mt-8 mb-8">
