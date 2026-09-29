@@ -88,7 +88,7 @@ export function useSEO({ title, description, path, noindex }: SEOProps) {
 
     // 5. JSON-LD
     const updateJsonLd = (id: string, data: any) => {
-      let script = document.getElementById(id);
+      let script = document.getElementById(id) as HTMLScriptElement | null;
       if (data) {
         if (!script) {
           script = document.createElement('script');

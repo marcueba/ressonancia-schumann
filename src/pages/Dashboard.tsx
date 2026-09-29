@@ -5,7 +5,6 @@ import { CurrentResonanceData, EarthResonanceIndex, GeomagneticData, SolarData }
 import { Card, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Activity, Radio, Sun, Compass, Globe2 } from 'lucide-react';
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function Dashboard() {
   useSEO({ title: "Ressonância Schumann | Observatório da Terra", description: "Observatório da Terra dedicado ao monitoramento da Ressonância de Schumann, atividade geomagnética e atividade solar, com transparência sobre fontes e metodologia.", path: "/" });
@@ -86,68 +85,7 @@ export function Dashboard() {
         </Card>
       </div>
 
-      <Card className="p-0 overflow-hidden bg-surface-hover/20">
-        <div className="p-6 border-b border-border">
-          <CardTitle as="h2">Modos Observados</CardTitle>
-          <CardDescription>Frequência e amplitude dos modos observados.</CardDescription>
-        </div>
-        {!current ? (
-          <div className="h-[400px] w-full p-6 flex flex-col items-center justify-center text-center">
-            <Activity className="w-12 h-12 text-text-muted mb-4 opacity-50" />
-            <h2 className="text-xl font-medium text-text-main mb-2">Dados ELF primários indisponíveis</h2>
-            <p className="text-text-muted max-w-lg">
-              A arquitetura do observatório está preparada para gerar os espectrogramas, mas nenhuma fonte ELF de alta frequência está conectada neste momento.
-            </p>
-          </div>
-        ) : (
-          <div className="h-[400px] w-full p-6 pt-8 relative">
-            {current.is_demo && (
-               <div className="absolute top-2 right-4 z-10 px-3 py-1 bg-amber-900/30 text-amber-500 rounded text-xs border border-amber-800/50">
-                 MODO DE DESENVOLVIMENTO (DADOS GERADOS LOCALMENTE)
-               </div>
-            )}
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                <XAxis 
-                  type="number" 
-                  dataKey="freq" 
-                  name="Frequência" 
-                  unit=" Hz" 
-                  stroke="var(--color-text-muted)" 
-                  tick={{fill: 'var(--color-text-muted)'}} 
-                  domain={[0, 40]} 
-                />
-                <YAxis 
-                  type="number" 
-                  dataKey="amp" 
-                  name="Amplitude" 
-                  stroke="var(--color-text-muted)" 
-                  tick={{fill: 'var(--color-text-muted)'}} 
-                />
-                <Tooltip 
-                  cursor={{ strokeDasharray: '3 3' }}
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
-                      return (
-                        <div className="bg-surface border border-border p-3 rounded-lg shadow-lg">
-                          <p className="font-medium text-text-main mb-1">{data.name}</p>
-                          <p className="text-sm text-text-muted">Frequência: <span className="text-primary">{data.freq.toFixed(2)} Hz</span></p>
-                          <p className="text-sm text-text-muted">Amplitude: <span className="text-text-main">{data.amp.toFixed(2)}</span></p>
-                          <p className="text-sm text-text-muted">Qualidade: <span className="text-text-main">{data.quality}</span></p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Scatter name="Modos" data={spectrumData} fill="var(--color-primary)" />
-              </ScatterChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </Card>
+      
 
       
       <div className="space-y-4 mt-8 mb-8">
@@ -267,7 +205,7 @@ export function Dashboard() {
                     </div>
                     <div>
                       <div className="text-[10px] text-text-muted uppercase mb-1">Manchas</div>
-                      <div className="text-3xl font-light text-text-main">{solar.sunspots}</div>
+                      <div className="text-3xl font-light text-text-main">{solar.sunspots != null ? solar.sunspots : '--'}</div>
                     </div>
                   </div>
                   

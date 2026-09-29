@@ -68,7 +68,8 @@ export function Stations() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {stations.map(station => (
-          <Card key={station.id} className="relative overflow-hidden group hover:border-border/80 transition-colors">
+          <div key={station.id} className="h-full">
+          <Card className="relative overflow-hidden group hover:border-border/80 transition-colors h-full">
             
             <CardHeader>
               <div className="flex items-center gap-2 text-text-muted mb-2">
@@ -103,6 +104,7 @@ export function Stations() {
               </div>
             </div>
           </Card>
+          </div>
         ))}
       </div>
     </div>

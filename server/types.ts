@@ -23,6 +23,7 @@ export interface ProviderResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
+  message?: string;
   cached?: boolean;
   timestamp: string;
 }
