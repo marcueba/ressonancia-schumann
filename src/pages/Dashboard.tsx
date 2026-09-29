@@ -234,12 +234,12 @@ export function Dashboard() {
                 <>
                   <div className="grid grid-cols-2 gap-4 mb-4 mt-2">
                     <div>
-                      <div className="text-[10px] text-text-muted uppercase mb-1">Fluxo (F10.7)</div>
-                      <div className="text-3xl font-light text-text-main">{solar.solarFlux}</div>
+                      <div className="text-[10px] text-text-muted uppercase mb-1">Vento Solar</div>
+                      <div className="text-2xl font-light text-text-main">{solar.solarWindSpeed != null ? `${solar.solarWindSpeed}` : '--'} <span className="text-sm text-text-muted">km/s</span></div>
                     </div>
                     <div>
-                      <div className="text-[10px] text-text-muted uppercase mb-1">Manchas</div>
-                      <div className="text-3xl font-light text-text-main">{solar.sunspots != null ? solar.sunspots : '--'}</div>
+                      <div className="text-[10px] text-text-muted uppercase mb-1">IMF (Bz)</div>
+                      <div className="text-2xl font-light text-text-main">{solar.bz != null ? `${solar.bz}` : '--'} <span className="text-sm text-text-muted">nT</span></div>
                     </div>
                   </div>
                   

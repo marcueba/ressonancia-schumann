@@ -12,6 +12,12 @@ export interface SolarData {
   sunspots: number | null;
   flares: string | null;
   status: string;
+  solarWindSpeed?: number | null;
+  protonDensity?: number | null;
+  bz?: number | null;
+  bt?: number | null;
+  solarWindTimestamp?: string | null;
+  imfTimestamp?: string | null;
 }
 
 export class NoaaProvider {
@@ -106,7 +112,7 @@ export class NoaaProvider {
     if (!isLive) {
       return {
         success: true,
-        data: { solarFlux: 145, sunspots: 78, flares: "M1.2 (Recente)", status: 'Ativa (DEMO)' },
+        data: { solarFlux: 145, sunspots: 78, flares: "M1.2 (Recente)", status: 'Ativa (DEMO)', solarWindSpeed: 420.5, protonDensity: 5.2, bz: -2.3, bt: 6.1 },
         timestamp: new Date().toISOString()
       };
     }
@@ -156,7 +162,54 @@ export class NoaaProvider {
           console.warn("NOAA flares fetch failed", e);
         }
 
+        
+        // Fetch Solar Wind (Plasma)
+        let solarWindSpeed = null;
+        let protonDensity = null;
+        let solarWindTimestamp = null;
+        try {
+          const resWind = await fetch('https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json');
+          if (resWind.ok) {
+            const dataWind: any[] = await resWind.json();
+            // Find the most recent active/valid entry
+            for (let i = dataWind.length - 1; i >= 0; i--) {
+              const item = dataWind[i];
+              if (item.proton_speed != null && item.proton_density != null) {
+                solarWindSpeed = item.proton_speed;
+                protonDensity = item.proton_density;
+                solarWindTimestamp = item.time_tag;
+                break;
+              }
+            }
+          }
+        } catch(e) {
+          console.warn("NOAA solar wind fetch failed", e);
+        }
+
+        // Fetch IMF (Mag)
+        let bz = null;
+        let bt = null;
+        let imfTimestamp = null;
+        try {
+          const resMag = await fetch('https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json');
+          if (resMag.ok) {
+            const dataMag: any[] = await resMag.json();
+            for (let i = dataMag.length - 1; i >= 0; i--) {
+              const item = dataMag[i];
+              if (item.bz_gsm != null && item.bt != null) {
+                bz = item.bz_gsm;
+                bt = item.bt;
+                imfTimestamp = item.time_tag;
+                break;
+              }
+            }
+          }
+        } catch(e) {
+          console.warn("NOAA mag fetch failed", e);
+        }
+
         if (flux === null || isNaN(flux)) {
+
            throw new Error('Fluxo solar F10.7 inválido ou indisponível');
         }
 
@@ -164,7 +217,13 @@ export class NoaaProvider {
           solarFlux: flux,
           sunspots: sunspots,
           flares: flares,
-          status: this.getStatusFromFlux(flux)
+          status: this.getStatusFromFlux(flux),
+          solarWindSpeed,
+          protonDensity,
+          bz,
+          bt,
+          solarWindTimestamp,
+          imfTimestamp
         };
 
         const result = { 

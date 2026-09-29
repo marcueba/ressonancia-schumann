@@ -65,10 +65,53 @@ export function Solar() {
           <p className="text-xs text-text-muted mt-2">Maior ou mais recente evento de Raio-X monitorado.</p>
         </Card>
       </div>
+      <div className="mt-12 mb-6">
+        <h2 className="text-xl font-medium tracking-wide text-text-main border-b border-border pb-2">VENTO SOLAR</h2>
+        <p className="text-sm text-text-muted mt-3 mb-6">
+          O vento solar é um fluxo constante de plasma (principalmente elétrons e prótons) emitido pelo Sol. A velocidade e a densidade descrevem propriedades diferentes deste plasma. O campo magnético interplanetário (IMF) é o campo magnético transportado pelo vento solar por todo o sistema solar, sendo <strong>Bz</strong> e <strong>Bt</strong> componentes direcionais e totais desse campo, medidas em nanoTeslas (nT).
+          <br /><br />
+          <strong>Nota:</strong> Esses parâmetros são apresentados como contexto heliogeofísico. Sua proximidade temporal com uma observação Schumann não implica relação causal.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="flex flex-col items-center justify-center py-6 px-4 text-center">
+            <div className="text-xs tracking-widest text-text-muted uppercase mb-2">Velocidade</div>
+            <div className="text-3xl font-light text-text-main mb-1">{data.solarWindSpeed != null ? data.solarWindSpeed : '--'} <span className="text-base text-text-muted">km/s</span></div>
+            <p className="text-[10px] text-text-muted mt-2">
+              {data.solarWindTimestamp ? `Atualizado: ${new Date(data.solarWindTimestamp).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })}` : '--'}
+            </p>
+          </Card>
+
+          <Card className="flex flex-col items-center justify-center py-6 px-4 text-center">
+            <div className="text-xs tracking-widest text-text-muted uppercase mb-2">Densidade de Prótons</div>
+            <div className="text-3xl font-light text-text-main mb-1">{data.protonDensity != null ? data.protonDensity : '--'} <span className="text-base text-text-muted">p/cm³</span></div>
+            <p className="text-[10px] text-text-muted mt-2">
+              {data.solarWindTimestamp ? `Atualizado: ${new Date(data.solarWindTimestamp).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })}` : '--'}
+            </p>
+          </Card>
+
+          <Card className="flex flex-col items-center justify-center py-6 px-4 text-center">
+            <div className="text-xs tracking-widest text-text-muted uppercase mb-2">IMF Bz</div>
+            <div className="text-3xl font-light text-text-main mb-1">{data.bz != null ? data.bz : '--'} <span className="text-base text-text-muted">nT</span></div>
+            <p className="text-[10px] text-text-muted mt-2">
+              {data.imfTimestamp ? `Atualizado: ${new Date(data.imfTimestamp).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })}` : '--'}
+            </p>
+          </Card>
+
+          <Card className="flex flex-col items-center justify-center py-6 px-4 text-center">
+            <div className="text-xs tracking-widest text-text-muted uppercase mb-2">IMF Bt (Total)</div>
+            <div className="text-3xl font-light text-text-main mb-1">{data.bt != null ? data.bt : '--'} <span className="text-base text-text-muted">nT</span></div>
+            <p className="text-[10px] text-text-muted mt-2">
+              {data.imfTimestamp ? `Atualizado: ${new Date(data.imfTimestamp).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })}` : '--'}
+            </p>
+          </Card>
+        </div>
+      </div>
+
       
       <div className="mt-4 flex flex-col gap-1">
         <p className="text-sm text-text-muted font-medium">
-          Fonte: NOAA SWPC
+          Fonte: <a href="https://www.swpc.noaa.gov/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">NOAA Space Weather Prediction Center (SWPC)</a>
         </p>
         <p className="text-xs text-text-muted">
           {data.timestamp 
