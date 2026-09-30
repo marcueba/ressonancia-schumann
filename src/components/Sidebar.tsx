@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { 
-  Activity, 
+  Activity,
+  BookOpen, 
   BarChart3, 
   Globe2, 
   Sun, 
@@ -22,6 +23,7 @@ const navItems = [
   { path: '/geomagnetica', label: 'Ativ. Geomagnética', icon: Compass },
   { path: '/solar', label: 'Atividade Solar', icon: Sun },
   { path: '/metodologia', label: 'Metodologia', icon: Database },
+  { path: '/artigos', label: 'Artigos', icon: BookOpen },
 ];
 
 export function Sidebar() {

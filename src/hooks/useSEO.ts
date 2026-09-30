@@ -5,9 +5,11 @@ interface SEOProps {
   description: string;
   path?: string;
   noindex?: boolean;
+  isArticle?: boolean;
+  articleDate?: string;
 }
 
-export function useSEO({ title, description, path, noindex }: SEOProps) {
+export function useSEO({ title, description, path, noindex, isArticle, articleDate }: SEOProps) {
   useEffect(() => {
     // 1. Update Title
     document.title = title;
@@ -60,7 +62,7 @@ export function useSEO({ title, description, path, noindex }: SEOProps) {
       setMeta('property="og:title"', 'property', 'og:title', title);
       setMeta('property="og:description"', 'property', 'og:description', description);
       setMeta('property="og:url"', 'property', 'og:url', canonicalUrl);
-      setMeta('property="og:type"', 'property', 'og:type', 'website');
+      setMeta('property="og:type"', 'property', 'og:type', isArticle ? 'article' : 'website');
       setMeta('property="og:site_name"', 'property', 'og:site_name', 'Observatório da Terra');
       setMeta('property="og:locale"', 'property', 'og:locale', 'pt_BR');
       setMeta('property="og:image"', 'property', 'og:image', ogImage);
@@ -114,7 +116,8 @@ export function useSEO({ title, description, path, noindex }: SEOProps) {
           "description": description
         });
         updateJsonLd('jsonld-webpage', null);
-        updateJsonLd('jsonld-breadcrumb', null);
+        updateJsonLd('jsonld-article', null);
+      updateJsonLd('jsonld-breadcrumb', null);
       } else {
         updateJsonLd('jsonld-website', null);
         updateJsonLd('jsonld-webpage', {
@@ -131,6 +134,38 @@ export function useSEO({ title, description, path, noindex }: SEOProps) {
         });
 
         let pageName = title.split('|')[0].trim();
+        
+      if (isArticle) {
+        updateJsonLd('jsonld-article', {
+          "@context": "https://schema.org",
+          "@type": "Article",
+          "headline": title,
+          "description": description,
+          "author": {
+            "@type": "Organization",
+            "name": "Observatório da Terra",
+            "url": "https://ressonanciaschumann.com/"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Observatório da Terra",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://ressonanciaschumann.com/favicon.svg"
+            }
+          },
+          "datePublished": articleDate || new Date().toISOString(),
+          "dateModified": articleDate || new Date().toISOString(),
+          "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": canonicalUrl
+          },
+          "image": ogImage
+        });
+      } else {
+        updateJsonLd('jsonld-article', null);
+      }
+
         updateJsonLd('jsonld-breadcrumb', {
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",

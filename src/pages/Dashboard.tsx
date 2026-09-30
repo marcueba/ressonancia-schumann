@@ -11,7 +11,7 @@ import { SchumannSpectrogramPanel } from '../components/SchumannSpectrogramPanel
 
 
 export function Dashboard() {
-  useSEO({ title: "Ressonância Schumann | Observatório da Terra", description: "Observatório da Terra dedicado ao monitoramento da Ressonância de Schumann, atividade geomagnética e atividade solar, com transparência sobre fontes e metodologia.", path: "/" });
+  useSEO({ title: "Ressonância Schumann Hoje | Dados, Gráficos e Monitoramento", description: "Acompanhe a Ressonância Schumann hoje com frequências F1, F2 e F3, espectrograma, histórico observacional e contexto geomagnético e solar.", path: "/" });
 
   const [isLoading, setIsLoading] = useState(true);
   const [current, setCurrent] = useState<CurrentResonanceData | null>(null);

@@ -8,7 +8,7 @@ import { Activity, Info } from 'lucide-react';
 import { SchumannSpectrogramPanel } from '../components/SchumannSpectrogramPanel';
 
 export function CurrentResonance() {
-  useSEO({ title: "Ressonância de Schumann em Tempo Real | Observatório da Terra", description: "Acompanhe o estado atual do monitoramento da Ressonância de Schumann e conheça os limites e a disponibilidade das fontes ELF utilizadas pelo observatório.", path: "/atual" });
+  useSEO({ title: "Dados Atuais da Ressonância Schumann | Frequências Hoje", description: "Últimas observações da Ressonância Schumann hoje. Monitoramento das frequências F1, F2, F3 e intensidade relativa derivadas do espectrograma.", path: "/atual" });
 
   const [data, setData] = useState<CurrentResonanceData | null>(null);
   const [loading, setLoading] = useState(true);

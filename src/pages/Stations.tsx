@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle } from '../components/ui/Card';
 import { MapPin } from 'lucide-react';
 
 export function Stations() {
-  useSEO({ title: "Estações e fontes de observação ELF | Observatório da Terra", description: "Conheça as estações e fontes de referência utilizadas no monitoramento ELF e no contexto científico da Ressonância de Schumann.", path: "/estacoes" });
+  useSEO({ title: "Estações de Monitoramento ELF | Ressonância Schumann", description: "Conheça o status e a localização das estações de monitoramento ELF (Extremely Low Frequency) utilizadas para coleta de dados da Ressonância Schumann.", path: "/estacoes" });
 
   const stations = [
     {

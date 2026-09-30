@@ -1,7 +1,8 @@
 import { useSEO } from '../hooks/useSEO';
+import { Link } from 'react-router-dom';
 
 export function ERI() {
-  useSEO({ title: "Índice ERI | Ressonância Schumann | Observatório da Terra", description: "O Earth Resonance Index está em desenvolvimento.", path: "/indice" });
+  useSEO({ title: "Earth Resonance Index (ERI) | Ressonância Schumann", description: "O Earth Resonance Index é um indicador estatístico experimental em desenvolvimento para avaliar desvios da Ressonância Schumann.", path: "/indice" });
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
@@ -18,7 +19,9 @@ export function ERI() {
           O índice não está ativo neste momento enquanto a base observacional de telemetria bruta não atingir a densidade e a cobertura adequadas para fornecer validação matemática rigorosa. Não utilizaremos fórmulas provisórias que misturem dados de origens indiretas ou valores arbitrários.
         </p>
       </div>
-      
+      <div className="text-center mt-8">
+        <Link to="/metodologia" className="text-gold hover:text-gold-muted text-sm uppercase tracking-widest">→ Leia a Metodologia</Link>
+      </div>
       <div className="bg-surface-hover/20 border border-border/50 rounded-lg p-6 mt-6">
         <p className="text-sm text-text-muted text-center italic">
           Os dados apresentados são observações de campos eletromagnéticos naturais. A plataforma não atribui automaticamente efeitos biológicos, psicológicos ou espirituais a nenhuma métrica isolada.

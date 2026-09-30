@@ -9,6 +9,8 @@ import { Solar } from './pages/Solar';
 import { Methodology } from './pages/Methodology';
 import { NotFound } from './pages/NotFound';
 import { HistoryPage } from './pages/History';
+import { Articles } from './pages/Articles';
+import { ArticleSchumann } from './pages/ArticleSchumann';
 
 export default function App() {
   return (
@@ -23,6 +25,8 @@ export default function App() {
           <Route path="geomagnetica" element={<Geomagnetic />} />
           <Route path="solar" element={<Solar />} />
           <Route path="metodologia" element={<Methodology />} />
+          <Route path="artigos" element={<Articles />} />
+          <Route path="artigos/o-que-e-ressonancia-schumann" element={<ArticleSchumann />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

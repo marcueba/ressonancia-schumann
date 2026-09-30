@@ -4,7 +4,9 @@ const path = require('path');
 const { spawn, execSync } = require('child_process');
 const os = require('os');
 
-const ROUTES = ['/', '/atual', '/historico', '/estacoes', '/indice', '/geomagnetica', '/solar', '/metodologia', '/404'];
+const ROUTES = ['/', '/atual', '/historico', '/estacoes', '/indice', '/geomagnetica', '/solar', '/metodologia',
+  '/artigos',
+  '/artigos/o-que-e-ressonancia-schumann', '/404'];
 const PORT = process.env.PRERENDER_PORT || 8999;
 
 async function getBrowserConfig() {
@@ -154,7 +156,9 @@ async function startServer() {
       let fileName = route === '/' ? 'index.html' : `${route.substring(1)}.html`;
       const filePath = path.join(distDir, fileName);
 
-      fs.writeFileSync(filePath, html);
+      const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(filePath, html);
       console.log(`✅ Saved ${fileName} (${(html.length / 1024).toFixed(2)} KB)`);
       await page.close();
     }

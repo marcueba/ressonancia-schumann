@@ -1,4 +1,5 @@
 import { useSEO } from '../hooks/useSEO';
+import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { dataProvider } from '../data/dataProvider';
 import { SolarData } from '../types';
@@ -7,7 +8,7 @@ import { XRayChart } from '../components/XRayChart';
 import { Sun } from 'lucide-react';
 
 export function Solar() {
-  useSEO({ title: "Atividade Solar | Observatório da Terra", description: "Acompanhe indicadores de atividade solar utilizados como contexto para o monitoramento da Ressonância de Schumann, com dados do NOAA SWPC.", path: "/solar" });
+  useSEO({ title: "Atividade Solar Hoje | Vento Solar, Bz, F10.7 e Raios X", description: "Acompanhe a atividade solar atual. Monitoramento do vento solar, campo magnético interplanetário (Bz), fluxo solar F10.7 e erupções de Raios X (GOES).", path: "/solar" });
 
   const [data, setData] = useState<SolarData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,6 +45,9 @@ export function Solar() {
         <p className="text-text-muted max-w-3xl leading-relaxed">
           A atividade solar e o clima espacial influenciam o ambiente eletromagnético e ionosférico da Terra. Esses dados são apresentados aqui como contexto para a análise das condições geofísicas, não como uma observação direta da Ressonância de Schumann.
         </p>
+        <div className="mt-4">
+          <Link to="/geomagnetica" className="text-gold hover:text-gold-muted text-sm uppercase tracking-widest">→ Ver Atividade Geomagnética (Kp)</Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

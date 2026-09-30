@@ -8,7 +8,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { Compass } from 'lucide-react';
 
 export function Geomagnetic() {
-  useSEO({ title: "Atividade Geomagnética | Observatório da Terra", description: "Acompanhe a atividade geomagnética por meio dos dados do NOAA Space Weather Prediction Center e entenda sua relação contextual com a Ressonância de Schumann.", path: "/geomagnetica" });
+  useSEO({ title: "Índice Kp Hoje | Atividade Geomagnética e Tempestades Solares", description: "Monitore a atividade geomagnética global através do Índice Kp. Acompanhe tempestades magnéticas que podem interagir com a cavidade Terra-ionosfera.", path: "/geomagnetica" });
 
   const [data, setData] = useState<GeomagneticData | null>(null);
   const [isLoading, setIsLoading] = useState(true);

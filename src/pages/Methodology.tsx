@@ -1,8 +1,9 @@
 import { useSEO } from '../hooks/useSEO';
+import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 
 export function Methodology() {
-  useSEO({ title: "Metodologia Científica | Observatório da Terra", description: "Conheça a proveniência dos dados, contexto geofísico, referência científica metodológica e as limitações do Observatório da Terra.", path: "/metodologia" });
+  useSEO({ title: "Como Medimos a Ressonância Schumann | Metodologia e Fontes", description: "Entenda a metodologia técnica, as fontes de dados e as limitações na coleta e processamento das medições da Ressonância Schumann apresentadas no observatório.", path: "/metodologia" });
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700 pb-12">

@@ -6,7 +6,7 @@ import { Card, CardTitle } from '../components/ui/Card';
 import { SchumannTimelineChart, Range } from '../components/SchumannTimelineChart';
 
 export function HistoryPage() {
-  useSEO({ title: "Histórico da Ressonância de Schumann | Observatório da Terra", description: "Consulte o histórico disponível de observações relacionadas à Ressonância de Schumann.", path: "/historico" });
+  useSEO({ title: "Histórico da Ressonância Schumann | Frequências F1, F2 e F3", description: "Consulte o histórico observacional da Ressonância Schumann. Gráficos de variação temporal para as frequências F1, F2 e F3 nas últimas 24h, 7 dias ou mais.", path: "/historico" });
 
   const [data, setData] = useState<HistoricalDataPoint[]>([]);
   const [range, setRange] = useState<Range>('24h');
