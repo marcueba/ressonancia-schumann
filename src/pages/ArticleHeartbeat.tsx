@@ -1,5 +1,6 @@
 import { useSEO } from '../hooks/useSEO';
 import { Link } from 'react-router-dom';
+import { SocialShare } from '../components/SocialShare';
 
 export function ArticleHeartbeat() {
   useSEO({ 
@@ -7,6 +8,7 @@ export function ArticleHeartbeat() {
     description: "Entenda por que a Ressonância Schumann é chamada de “batimento cardíaco da Terra”, o que existe de científico nessa comparação e onde a metáfora encontra seus limites.", 
     path: "/artigos/batimento-cardiaco-da-terra",
     isArticle: true,
+    image: "/og-article-3.jpg",
     articleDate: "2026-09-29T14:00:00Z"
   });
 
@@ -140,6 +142,11 @@ export function ArticleHeartbeat() {
             <li><Link to="/metodologia" className="text-gold hover:text-gold-muted uppercase tracking-widest text-sm">→ Como Coletamos e Lemos os Dados (Metodologia)</Link></li>
           </ul>
         </div>
+      
+        <SocialShare 
+          title="Batimento Cardíaco da Terra: O que é a Ressonância Schumann?"
+          url="https://ressonanciaschumann.com/artigos/batimento-cardiaco-da-terra" 
+        />
       </article>
     </div>
   );

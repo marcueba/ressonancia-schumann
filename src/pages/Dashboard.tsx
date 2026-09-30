@@ -8,9 +8,12 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { Activity, Radio, Sun, Compass, Globe2 } from 'lucide-react';
 import { SchumannTimelineChart, Range } from '../components/SchumannTimelineChart';
 import { SchumannSpectrogramPanel } from '../components/SchumannSpectrogramPanel';
-
+import { SocialShare } from '../components/SocialShare';
+import { ShareCardModal } from '../components/ShareCardModal';
+import { Share2 } from 'lucide-react';
 
 export function Dashboard() {
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   useSEO({ title: "Ressonância Schumann Hoje | Dados, Gráficos e Monitoramento", description: "Acompanhe a Ressonância Schumann hoje com frequências F1, F2 e F3, espectrograma, histórico observacional e contexto geomagnético e solar.", path: "/" });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -344,6 +347,22 @@ export function Dashboard() {
           </div>
         </div>
       </Card>
+      <SocialShare 
+        title="Ressonância Schumann Hoje | Observatório da Terra"
+        url="https://ressonanciaschumann.com/" 
+      />
+
+      <ShareCardModal 
+        isOpen={isShareModalOpen} 
+        onClose={() => setIsShareModalOpen(false)}
+        data={{
+          f1: current?.fundamental?.frequency ?? null,
+          f2: current?.mode2?.frequency ?? null,
+          f3: current?.mode3?.frequency ?? null,
+          intensity: current?.relativeIntensity?.value ?? null,
+          timestamp: current?.timestamp ?? null
+        }}
+      />
     </div>
   );
 }

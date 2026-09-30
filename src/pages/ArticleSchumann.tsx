@@ -1,5 +1,6 @@
 import { useSEO } from '../hooks/useSEO';
 import { Link } from 'react-router-dom';
+import { SocialShare } from '../components/SocialShare';
 
 export function ArticleSchumann() {
   useSEO({ 
@@ -7,6 +8,7 @@ export function ArticleSchumann() {
     description: "Aprenda a definição científica da Ressonância Schumann. O que significa 7,83 Hz, como os raios criam ondas ELF na cavidade Terra-ionosfera e o que mostram os dados.", 
     path: "/artigos/o-que-e-ressonancia-schumann",
     isArticle: true,
+    image: "/og-article-1.jpg",
     articleDate: "2026-09-29T12:00:00Z"
   });
 
@@ -96,6 +98,11 @@ export function ArticleSchumann() {
             <li><Link to="/metodologia" className="text-gold hover:text-gold-muted uppercase tracking-widest text-sm">→ Como Coletamos e Lemos os Dados (Metodologia)</Link></li>
           </ul>
         </div>
+      
+        <SocialShare 
+          title="O que é a Ressonância Schumann?"
+          url="https://ressonanciaschumann.com/artigos/o-que-e-ressonancia-schumann" 
+        />
       </article>
 
     </div>

@@ -5,11 +5,12 @@ interface SEOProps {
   description: string;
   path?: string;
   noindex?: boolean;
+  image?: string;
   isArticle?: boolean;
   articleDate?: string;
 }
 
-export function useSEO({ title, description, path, noindex, isArticle, articleDate }: SEOProps) {
+export function useSEO({ title, description, path, noindex, isArticle, articleDate, image }: SEOProps) {
   useEffect(() => {
     // 1. Update Title
     document.title = title;
@@ -56,7 +57,7 @@ export function useSEO({ title, description, path, noindex, isArticle, articleDa
 
     // 4. Open Graph & Twitter
     const canonicalUrl = path ? `https://ressonanciaschumann.com${path}` : '';
-    const ogImage = 'https://ressonanciaschumann.com/og-image.png';
+    const ogImage = image ? `https://ressonanciaschumann.com${image}` : 'https://ressonanciaschumann.com/og-image.jpg';
 
     if (!noindex) {
       setMeta('property="og:title"', 'property', 'og:title', title);
@@ -68,7 +69,7 @@ export function useSEO({ title, description, path, noindex, isArticle, articleDa
       setMeta('property="og:image"', 'property', 'og:image', ogImage);
       setMeta('property="og:image:width"', 'property', 'og:image:width', '1200');
       setMeta('property="og:image:height"', 'property', 'og:image:height', '630');
-      setMeta('property="og:image:type"', 'property', 'og:image:type', 'image/png');
+      setMeta('property="og:image:type"', 'property', 'og:image:type', 'image/jpeg');
       setMeta('property="og:image:alt"', 'property', 'og:image:alt', 'Ressonância Schumann — Observatório da Terra');
 
       setMeta('name="twitter:card"', 'name', 'twitter:card', 'summary_large_image');

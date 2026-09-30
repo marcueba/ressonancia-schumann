@@ -1,5 +1,6 @@
 import { useSEO } from '../hooks/useSEO';
 import { Link } from 'react-router-dom';
+import { SocialShare } from '../components/SocialShare';
 
 export function ArticleSchumannToday() {
   useSEO({ 
@@ -7,6 +8,7 @@ export function ArticleSchumannToday() {
     description: "Aprenda a interpretar a Ressonância Schumann hoje: frequências F1, F2 e F3, intensidade relativa, espectrograma, histórico e contexto geomagnético e solar.", 
     path: "/artigos/ressonancia-schumann-hoje",
     isArticle: true,
+    image: "/og-article-2.jpg",
     articleDate: "2026-09-29T13:00:00Z"
   });
 
@@ -171,6 +173,11 @@ export function ArticleSchumannToday() {
             <li><Link to="/metodologia" className="text-gold hover:text-gold-muted uppercase tracking-widest text-sm">→ Como Coletamos e Lemos os Dados (Metodologia)</Link></li>
           </ul>
         </div>
+      
+        <SocialShare 
+          title="Ressonância Schumann Hoje: Como Interpretar os Dados"
+          url="https://ressonanciaschumann.com/artigos/ressonancia-schumann-hoje" 
+        />
       </article>
     </div>
   );
