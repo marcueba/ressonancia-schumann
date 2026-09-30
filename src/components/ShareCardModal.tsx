@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Download, Share2, Loader2 } from 'lucide-react';
 import * as htmlToImage from 'html-to-image';
 import { cn } from '../utils/cn';
@@ -19,15 +19,28 @@ export function ShareCardModal({ isOpen, onClose, data }: ShareCardModalProps) {
   const [format, setFormat] = useState<'feed' | 'story'>('feed');
   const [isGenerating, setIsGenerating] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      // focus on mount for a11y
+      closeButtonRef.current?.focus();
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   const obsDate = data.timestamp ? new Date(data.timestamp) : null;
   const dateStr = obsDate 
-    ? obsDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase().replace(' DE ', ' ')
+    ? obsDate.toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase().replace(' DE ', ' ')
     : '—';
   const timeStr = obsDate 
-    ? obsDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    ? obsDate.toLocaleTimeString('pt-BR', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit' })
     : '—';
 
   const formatConfig = {
@@ -89,7 +102,7 @@ export function ShareCardModal({ isOpen, onClose, data }: ShareCardModalProps) {
       <div className="bg-surface border border-border rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-200">
         
         {/* Header / Close for mobile */}
-        <button onClick={onClose} className="absolute right-4 top-4 z-10 p-2 bg-background/50 rounded-full hover:bg-background/80 transition-colors" aria-label="Fechar">
+        <button ref={closeButtonRef} onClick={onClose} className="absolute right-4 top-4 z-10 p-2 bg-background/50 rounded-full hover:bg-background/80 transition-colors" aria-label="Fechar">
           <X className="w-5 h-5 text-text-muted" />
         </button>
 
@@ -150,7 +163,7 @@ export function ShareCardModal({ isOpen, onClose, data }: ShareCardModalProps) {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '40px' }}>
                   <div>
-                    <div style={{ color: '#94a3b8', fontSize: '20px', marginBottom: '8px' }}>Última observação disponível</div>
+                    <div style={{ color: '#94a3b8', fontSize: '20px', marginBottom: '8px' }}>Última observação disponível (UTC)</div>
                     <div style={{ color: '#f8fafc', fontSize: '32px', fontWeight: 600 }}>{timeStr}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -213,7 +226,7 @@ export function ShareCardModal({ isOpen, onClose, data }: ShareCardModalProps) {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '40px' }}>
                   <div>
-                    <div style={{ color: '#94a3b8', fontSize: '20px', marginBottom: '8px' }}>Última observação disponível</div>
+                    <div style={{ color: '#94a3b8', fontSize: '20px', marginBottom: '8px' }}>Última observação disponível (UTC)</div>
                     <div style={{ color: '#f8fafc', fontSize: '32px', fontWeight: 600 }}>{timeStr}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>

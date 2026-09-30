@@ -6,12 +6,15 @@ import { Card, CardDescription, CardHeader, CardTitle } from '../components/ui/C
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Activity, Info } from 'lucide-react';
 import { SchumannSpectrogramPanel } from '../components/SchumannSpectrogramPanel';
+import { ShareCardModal } from '../components/ShareCardModal';
+import { Share2 } from 'lucide-react';
 
 export function CurrentResonance() {
   useSEO({ title: "Dados Atuais da Ressonância Schumann | Frequências Hoje", description: "Últimas observações da Ressonância Schumann hoje. Monitoramento das frequências F1, F2, F3 e intensidade relativa derivadas do espectrograma.", path: "/atual" });
 
   const [data, setData] = useState<CurrentResonanceData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   useEffect(() => {
     dataProvider.getCurrentData()
@@ -44,11 +47,20 @@ export function CurrentResonance() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
-      <div className="mb-8">
-        <h1 className="text-3xl font-light tracking-wide text-text-main mb-2">Painel Observacional</h1>
-        <p className="text-text-muted max-w-3xl leading-relaxed">
-          Monitoramento derivado da atividade eletromagnética ELF associada às Ressonâncias de Schumann.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-light tracking-wide text-text-main mb-2">Painel Observacional</h1>
+          <p className="text-text-muted max-w-3xl leading-relaxed">
+            Monitoramento derivado da atividade eletromagnética ELF associada às Ressonâncias de Schumann.
+          </p>
+        </div>
+        <button 
+          onClick={() => setIsShareModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-surface border border-border hover:border-gold/50 text-gold text-sm font-medium rounded-lg transition-colors uppercase tracking-widest whitespace-nowrap"
+        >
+          <Share2 className="w-4 h-4" />
+          <span>Criar Share Card</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -124,6 +136,18 @@ export function CurrentResonance() {
           </p>
         </Card>
       )}
+
+      <ShareCardModal 
+        isOpen={isShareModalOpen} 
+        onClose={() => setIsShareModalOpen(false)}
+        data={{
+          f1: data?.fundamental?.frequency ?? null,
+          f2: data?.mode2?.frequency ?? null,
+          f3: data?.mode3?.frequency ?? null,
+          intensity: data?.relativeIntensity?.value ?? null,
+          timestamp: data?.timestamp ?? null
+        }}
+      />
     </div>
   );
 }
