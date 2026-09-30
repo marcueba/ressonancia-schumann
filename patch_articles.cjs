@@ -1,4 +1,6 @@
-import { useSEO } from '../hooks/useSEO';
+const fs = require('fs');
+
+const content = `import { useSEO } from '../hooks/useSEO';
 import { Link } from 'react-router-dom';
 
 export function Articles() {
@@ -54,3 +56,6 @@ export function Articles() {
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/pages/Articles.tsx', content);

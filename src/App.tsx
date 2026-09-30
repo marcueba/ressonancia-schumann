@@ -11,6 +11,8 @@ import { NotFound } from './pages/NotFound';
 import { HistoryPage } from './pages/History';
 import { Articles } from './pages/Articles';
 import { ArticleSchumann } from './pages/ArticleSchumann';
+import { ArticleSchumannToday } from './pages/ArticleSchumannToday';
+import { ArticleHeartbeat } from './pages/ArticleHeartbeat';
 
 export default function App() {
   return (
@@ -27,6 +29,8 @@ export default function App() {
           <Route path="metodologia" element={<Methodology />} />
           <Route path="artigos" element={<Articles />} />
           <Route path="artigos/o-que-e-ressonancia-schumann" element={<ArticleSchumann />} />
+          <Route path="artigos/ressonancia-schumann-hoje" element={<ArticleSchumannToday />} />
+          <Route path="artigos/batimento-cardiaco-da-terra" element={<ArticleHeartbeat />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

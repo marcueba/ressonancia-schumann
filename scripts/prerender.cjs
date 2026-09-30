@@ -6,7 +6,9 @@ const os = require('os');
 
 const ROUTES = ['/', '/atual', '/historico', '/estacoes', '/indice', '/geomagnetica', '/solar', '/metodologia',
   '/artigos',
-  '/artigos/o-que-e-ressonancia-schumann', '/404'];
+  '/artigos/o-que-e-ressonancia-schumann',
+  '/artigos/ressonancia-schumann-hoje',
+  '/artigos/batimento-cardiaco-da-terra', '/404'];
 const PORT = process.env.PRERENDER_PORT || 8999;
 
 async function getBrowserConfig() {
