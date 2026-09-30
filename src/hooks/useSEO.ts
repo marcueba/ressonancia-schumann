@@ -154,8 +154,8 @@ export function useSEO({ title, description, path, noindex, isArticle, articleDa
               "url": "https://ressonanciaschumann.com/favicon.svg"
             }
           },
-          "datePublished": articleDate || new Date().toISOString(),
-          "dateModified": articleDate || new Date().toISOString(),
+          ...(articleDate ? { "datePublished": articleDate, "dateModified": articleDate } : {}),
+          
           "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": canonicalUrl

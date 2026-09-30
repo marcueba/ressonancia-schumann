@@ -20,7 +20,7 @@ export function ArticleSchumann() {
         <h1 className="text-4xl font-light mb-6">O que é a Ressonância Schumann?</h1>
         
         <p className="lead text-xl text-text-main/80 mb-8">
-          Frequentemente chamada de "o batimento cardíaco da Terra", a Ressonância Schumann é um conjunto de picos no espectro de frequência extremamente baixa (ELF) do campo eletromagnético da Terra.
+          Popularmente conhecida pelo apelido não científico de "o batimento cardíaco da Terra", a Ressonância Schumann é fundamentalmente um conjunto de picos no espectro de frequência extremamente baixa (ELF) do campo eletromagnético da Terra.
         </p>
 
         <h2 className="text-2xl font-light mt-10 mb-4">Como a Ressonância Schumann é gerada?</h2>
@@ -49,7 +49,7 @@ export function ArticleSchumann() {
           Ao contrário de alguns mitos populares, a frequência fundamental da Terra <strong>não</strong> está aumentando drasticamente de 7,83 Hz para 30 ou 40 Hz.
         </p>
         <p>
-          As variações observadas (normalmente oscilando em décimos de Hertz, como 7.7 Hz ou 8.0 Hz) são causadas por mudanças físicas na cavidade Terra-ionosfera. Ciclos de dia/noite, mudanças nas estações, intensidade da atividade global de tempestades elétricas e flutuações na ionosfera devido à atividade solar (vento solar e raios X) alteram ligeiramente o "tamanho" efetivo da cavidade, mudando a sintonia da ressonância.
+          As variações observadas (normalmente oscilando em décimos de Hertz, como 7.7 Hz ou 8.0 Hz) são causadas por mudanças físicas na cavidade Terra-ionosfera. Ciclos de dia/noite, mudanças nas estações, intensidade da atividade global de tempestades elétricas e flutuações na ionosfera devido à atividade solar (vento solar e raios X) podem alterar as propriedades efetivas da cavidade, o que pode contribuir para flutuações e mudanças sutis na sintonia da ressonância observada pelas estações.
         </p>
         
         <h2 className="text-2xl font-light mt-10 mb-4">Frequência versus Intensidade (Amplitude)</h2>
@@ -74,18 +74,30 @@ export function ArticleSchumann() {
           <div>
             <h3 className="text-lg text-text-main font-medium mb-2">O que mostra um espectrograma Schumann?</h3>
             <p className="text-sm">
-              Um espectrograma é um gráfico visual onde o eixo horizontal é o tempo, o eixo vertical é a frequência (geralmente 0 a 40 Hz) e a cor representa a intensidade da onda. As linhas horizontais brilhantes constantes mostram os modos de ressonância (F1, F2, F3). Raias verticais brilhantes representam rajadas de "ruído" eletromagnético de banda larga, causadas por tempestades elétricas intensas locais ou globais.
+              Um espectrograma é um gráfico visual onde o eixo horizontal é o tempo, o eixo vertical é a frequência (geralmente 0 a 40 Hz) e a cor representa a intensidade da onda. As linhas horizontais brilhantes constantes mostram os modos de ressonância (F1, F2, F3). Raias verticais luminosas frequentemente mostram o espectrograma com maior intensidade visual naquela região, o que pode estar associado a rajadas de ruído eletromagnético de banda larga, causadas por atividade elétrica local ou perturbações transitórias.
             </p>
           </div>
           <div>
             <h3 className="text-lg text-text-main font-medium mb-2">A atividade solar altera a Ressonância Schumann?</h3>
             <p className="text-sm">
-              Indiretamente, sim. Erupções solares (Raios X) e tempestades geomagnéticas (vento solar) ionizam a atmosfera superior da Terra (ionosfera). Ao alterar a espessura e a densidade da "parede" superior da cavidade, a atividade solar pode causar pequenas flutuações nas frequências e, principalmente, absorver ou refletir as ondas, alterando o que é medido no solo.
+              Indiretamente, sim. Erupções solares (Raios X) e tempestades geomagnéticas (vento solar) ionizam a atmosfera superior da Terra (ionosfera). Ao alterar propriedades da "parede" superior da cavidade, o que sugere que a atividade solar pode contribuir indiretamente para pequenas flutuações, alterando ocasionalmente a reflexão ou absorção das ondas medidas no solo.
             </p>
           </div>
         </div>
 
+      
+        <hr className="border-border my-10" />
+
+        <div className="bg-surface-hover/20 rounded-xl p-6 border border-border">
+          <h2 className="text-xl text-text-main font-medium mb-4 mt-0">Explore o Observatório</h2>
+          <ul className="space-y-3 m-0 pl-0 list-none">
+            <li><Link to="/atual" className="text-gold hover:text-gold-muted uppercase tracking-widest text-sm">→ Dados Atuais da Ressonância</Link></li>
+            <li><Link to="/historico" className="text-gold hover:text-gold-muted uppercase tracking-widest text-sm">→ Histórico F1, F2 e F3</Link></li>
+            <li><Link to="/metodologia" className="text-gold hover:text-gold-muted uppercase tracking-widest text-sm">→ Como Coletamos e Lemos os Dados (Metodologia)</Link></li>
+          </ul>
+        </div>
       </article>
+
     </div>
   );
 }
