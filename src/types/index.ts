@@ -44,8 +44,9 @@ export interface Station {
 }
 
 export interface EarthResonanceIndex {
-  score: number;
-  status: string;
+  enabled: false;
+  status: 'Em desenvolvimento';
+  experimental: true;
 }
 
 export interface KpDataPoint {

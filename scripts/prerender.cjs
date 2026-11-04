@@ -10,6 +10,7 @@ const ROUTES = ['/', '/atual', '/historico', '/estacoes', '/indice', '/geomagnet
   '/artigos/ressonancia-schumann-hoje',
   '/artigos/batimento-cardiaco-da-terra', '/404'];
 const PORT = process.env.PRERENDER_PORT || 8999;
+const projectRoot = path.join(__dirname, '..');
 
 async function getBrowserConfig() {
   const platform = os.platform();
@@ -27,8 +28,8 @@ async function getBrowserConfig() {
     return {
       executablePath: await chromium.executablePath(),
       args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      headless: chromium.headless,
+      defaultViewport: { width: 1440, height: 900, deviceScaleFactor: 1 },
+      headless: 'shell',
     };
   }
 
@@ -81,10 +82,15 @@ async function getBrowserConfig() {
 async function startServer() {
   return new Promise((resolve, reject) => {
     const server = spawn(process.execPath, ['dist/server.cjs'], {
+      cwd: projectRoot,
       env: { ...process.env, NODE_ENV: 'production', DATA_MODE: 'live', PORT: PORT.toString(), PRERENDER: 'true' },
     });
 
     let started = false;
+    const startupTimer = setTimeout(() => {
+      server.kill();
+      reject(new Error('Temporary server did not start within 10 seconds'));
+    }, 10000);
 
     server.stdout.on('data', (data) => {
       const msg = data.toString();
@@ -93,6 +99,7 @@ async function startServer() {
       }
       if (msg.includes('Server running on port')) {
         started = true;
+        clearTimeout(startupTimer);
         resolve(server);
       }
     });
@@ -102,11 +109,13 @@ async function startServer() {
     });
 
     server.on('error', (err) => {
+      clearTimeout(startupTimer);
       if (!started) reject(err);
     });
 
     server.on('exit', (code) => {
-      if (!started && code !== 0) reject(new Error(`Server exited with code ${code}`));
+      clearTimeout(startupTimer);
+      if (!started) reject(new Error(`Server exited before readiness with code ${code}`));
     });
   });
 }
@@ -128,52 +137,67 @@ async function startServer() {
     for (const route of ROUTES) {
       console.log(`Prerendering ${route}...`);
       const page = await browser.newPage();
+      const pageErrors = [];
+      page.on('pageerror', error => pageErrors.push(String(error)));
+      try {
+        page.on('console', msg => {
+          if (msg.type() === 'error' && !msg.text().includes('favicon.ico')) {
+            console.log(`[Prerender Browser Warning ${route}]:`, msg.text());
+          }
+        });
+
+        const url = `http://localhost:${PORT}${route}`;
+        const response = await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
       
-      page.on('console', msg => {
-        if (msg.type() === 'error' && !msg.text().includes('favicon.ico')) {
-           if (!msg.text().includes('Content Security Policy')) {
-             console.log(`[Prerender Browser Warning ${route}]:`, msg.text());
-           }
+        if (!response.ok()) {
+          throw new Error(`Failed to load ${url}: Status ${response.status()}`);
         }
-      });
 
-      const url = `http://localhost:${PORT}${route}`;
-      const response = await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-      
-      if (!response.ok()) {
-        throw new Error(`Failed to load ${url}: Status ${response.status()}`);
+        if (route === '/404') {
+          await page.waitForFunction(() => document.querySelector('meta[name="robots"]')?.content.includes('noindex'), { timeout: 10000 });
+        } else {
+          await page.waitForFunction(expected => document.querySelector('link[rel="canonical"]')?.href === expected, { timeout: 10000 }, `https://ressonanciaschumann.com${route}`);
+        }
+        if (pageErrors.length) throw new Error(`JavaScript errors on ${route}: ${pageErrors.join('; ')}`);
+
+        const html = await page.evaluate(() => {
+          return '<!doctype html>\n' + document.documentElement.outerHTML;
+        });
+
+        let fileName = route === '/' ? 'index.html' : `${route.substring(1)}.html`;
+        const filePath = path.join(distDir, fileName);
+
+        const dir = path.dirname(filePath);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(filePath, html);
+        console.log(`✅ Saved ${fileName} (${(html.length / 1024).toFixed(2)} KB)`);
+      } catch (error) {
+        console.error('Prerender diagnostic:', JSON.stringify({
+          route, url: page.url(), pageErrors,
+          head: await page.evaluate(() => ({
+            title: document.title,
+            canonical: document.querySelector('link[rel="canonical"]')?.href,
+            robots: document.querySelector('meta[name="robots"]')?.content,
+          })),
+        }));
+        throw error;
+      } finally {
+        await page.close();
       }
-
-      if (route === '/404') {
-        await page.waitForSelector('meta[name="robots"]', { timeout: 10000 });
-      } else {
-        await page.waitForSelector('link[rel="canonical"]', { timeout: 10000 });
-      }
-      await new Promise(r => setTimeout(r, 1000));
-
-      const html = await page.evaluate(() => {
-        return '<!doctype html>\n' + document.documentElement.outerHTML;
-      });
-
-      let fileName = route === '/' ? 'index.html' : `${route.substring(1)}.html`;
-      const filePath = path.join(distDir, fileName);
-
-      const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(filePath, html);
-      console.log(`✅ Saved ${fileName} (${(html.length / 1024).toFixed(2)} KB)`);
-      await page.close();
     }
 
     console.log('🎉 Prerender completed successfully!');
   } catch (err) {
     console.error('\n❌ PRERENDER FAILED:', err);
-    process.exit(1);
+    process.exitCode = 1;
   } finally {
     if (browser) await browser.close();
     if (serverProcess) {
-       serverProcess.kill();
+       await new Promise(resolve => {
+         if (serverProcess.exitCode !== null) return resolve();
+         serverProcess.once('exit', resolve);
+         serverProcess.kill();
+       });
     }
-    process.exit(0);
   }
 })();

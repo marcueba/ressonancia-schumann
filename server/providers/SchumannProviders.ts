@@ -1,5 +1,6 @@
 import { ProviderResponse, NormalizedSchumannData } from '../types';
 import { apiCache } from '../services/cache';
+import { isValidObservationTime } from '../services/observation-time';
 
 function generateMockSchumann(stationId: string): NormalizedSchumannData {
   const now = new Date().toISOString();
@@ -64,8 +65,11 @@ export class SchumannProvider {
 
         const json = await response.json();
         
-        // Validation
-        const updatedAt = json.atualizado || new Date().toISOString();
+        // An observation without a valid source time cannot be replaced by download time.
+        const updatedAt = json.atualizado;
+        if (!isValidObservationTime(updatedAt)) {
+          throw new Error('Timestamp da observação ausente ou inválido');
+        }
         const f1 = json.fundamental?.pico_hz;
         const f2 = json.harmonicas?.[0]?.pico_hz;
         const f3 = json.harmonicas?.[1]?.pico_hz;

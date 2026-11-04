@@ -1,0 +1,55 @@
+name: Recovery Linux Validation
+
+on:
+  push:
+    branches: [codex/recuperacao-operacional]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: recovery-linux-validation
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.17.0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - name: Environment
+        run: |
+          uname -a
+          cat /etc/os-release
+          node --version
+          npm --version
+          bun --version
+          git rev-parse HEAD
+      - name: Clean frozen install
+        run: |
+          sha256sum package.json bun.lock > /tmp/frozen-before.sha256
+          bun install --frozen-lockfile
+          sha256sum --check /tmp/frozen-before.sha256
+      - name: TypeScript
+        run: npm run lint
+      - name: Regression tests
+        run: npm test
+      - name: Full build including prerender
+        run: npm run build
+      - name: Validate generated server and routes
+        run: node scripts/validate-artifact.cjs
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-linux-validation
+          path: |
+            dist
+            validation-evidence
+          retention-days: 7

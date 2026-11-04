@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
 import { useEffect, useState } from 'react';
 import { dataProvider } from '../data/dataProvider';
-import { CurrentResonanceData, EarthResonanceIndex, GeomagneticData, SolarData, HistoricalDataPoint } from '../types';
+import { CurrentResonanceData, GeomagneticData, SolarData, HistoricalDataPoint } from '../types';
 import { Card, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Activity, Radio, Sun, Compass, Globe2 } from 'lucide-react';
@@ -29,9 +29,8 @@ export function Dashboard() {
   useEffect(() => {
     async function load() {
       try {
-        const [c, e, g, s] = await Promise.all([
+        const [c, g, s] = await Promise.all([
           dataProvider.getCurrentData(),
-          dataProvider.getERI(),
           dataProvider.getGeomagneticData(),
           dataProvider.getSolarData()
         ]);

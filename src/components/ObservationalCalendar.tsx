@@ -12,6 +12,7 @@ export function ObservationalCalendar() {
 
   const [data, setData] = useState<HistoricalDataPoint[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   // Parse YYYY-MM
@@ -29,16 +30,21 @@ export function ObservationalCalendar() {
   useEffect(() => {
     async function fetchMonthData() {
       setLoading(true);
+      setError(false);
+      setSelectedDate(null);
       try {
         const res = await fetch(`/api/history?month=${currentMonth}`);
         if (res.ok) {
           const json = await res.json();
           setData(json);
         } else {
+          await res.body?.cancel();
+          setError(true);
           setData([]);
         }
       } catch (e) {
         console.error("Failed to fetch calendar data", e);
+        setError(true);
         setData([]);
       } finally {
         setLoading(false);
@@ -162,6 +168,8 @@ export function ObservationalCalendar() {
               <div className="h-64 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
               </div>
+            ) : error ? (
+              <p role="alert" className="p-6 text-center text-text-muted">Histórico temporariamente indisponível. Não foi possível consultar as observações.</p>
             ) : (
               <div className="grid grid-cols-7 gap-1 md:gap-2">
                 {calendarDays.map((day, idx) => {

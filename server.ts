@@ -3,12 +3,14 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 import path from "path";
-import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import * as dotenv from 'dotenv';
 import { tomskProvider, bgsProvider, cumianaProvider, etnaProvider, heartmathProvider } from "./server/providers/SchumannProviders";
 import { noaaProvider } from "./server/providers/NoaaProvider";
-import { calculateERI } from "./server/services/eri";
+import { installStaticPages } from "./server/services/static-pages";
+import { getERIState } from "./server/services/eri";
+import { createHistoryHandler } from "./server/services/history";
+import { serveTomskSpectrogram } from "./server/services/spectrogram";
 
 dotenv.config();
 
@@ -80,6 +82,15 @@ async function startServer() {
   });
 
   app.use('/api', apiRateLimiter);
+
+  // Prerender has no live data dependencies and never represents missing data as an empty archive.
+  if (process.env.PRERENDER === 'true') {
+    app.use('/api', (req, res, next) => {
+      if (req.path === '/eri' || req.path === '/config') return next();
+      return res.status(503).json({ available: false, error: 'prerender_data_unavailable' });
+    });
+  }
+
 
 
   const stationsData = [
@@ -197,18 +208,8 @@ async function startServer() {
     }
   });
 
-  app.get("/api/eri", async (req, res) => {
-    // To calculate ERI, we need the latest Schumann data and Geo Kp
-    const [schumann, geo] = await Promise.all([
-      tomskProvider.getCurrent(),
-      noaaProvider.getGeomagnetic()
-    ]);
-
-    const sData = schumann.success ? schumann.data! : null;
-    const kp = geo.success ? geo.data!.currentKp : null;
-
-    const eri = calculateERI(sData, kp);
-    res.json(eri);
+  app.get("/api/eri", (_req, res) => {
+    res.json(getERIState());
   });
 
   // Placeholder for Correlation (Future implementation)
@@ -239,138 +240,8 @@ async function startServer() {
   });
 
   // History (Simulated for both modes as we don't have DB configured yet)
-  app.get("/api/history", async (req, res) => {
-    // 5. Histórico da API
-    // O endpoint lê NOSSO Supabase e possui ranges predefinidos para segurança.
-    const allowedRanges = ['24h', '7d', '30d', '90d', '1y'];
-    const range = req.query.range as string;
-    const monthQuery = req.query.month as string; // format YYYY-MM
-    
-    if (range && !allowedRanges.includes(range)) {
-      return res.status(400).json({ error: "Invalid range" });
-    }
-    
-    if (monthQuery && !/^\d{4}-\d{2}$/.test(monthQuery)) {
-      return res.status(400).json({ error: "Invalid month format. Expected YYYY-MM" });
-    }
-
-    if (process.env.DATA_MODE === 'live') {
-      if (process.env.PRERENDER === 'true') {
-        return res.json([]);
-      }
-      let supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-      if (supabaseUrl && !supabaseUrl.startsWith('http')) {
-        supabaseUrl = `https://${supabaseUrl}.supabase.co`;
-      }
-      const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
-      
-      // We can use anon key here since reading might be public, or service key if RLS blocks read.
-      // Assuming RLS allows read for anon, but we'll use service key if needed to ensure it works for now.
-      const keyToUse = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
-      
-      if (!supabaseUrl || !keyToUse) {
-        return res.json([]);
-      }
-      
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(supabaseUrl, keyToUse);
-      
-      let query = supabase
-         .from('measurements')
-         .select('timestamp, f1_hz, f2_hz, f3_hz, quality, source_type, derived_from_image, processor')
-         .order('timestamp', { ascending: true });
-
-      if (monthQuery) {
-        // America/Sao_Paulo is UTC-3. 
-        // 2026-09-01T00:00:00-03:00 -> 2026-09-01T03:00:00Z
-        const [year, month] = monthQuery.split('-').map(Number);
-        
-        // Local start of month
-        const startDateStr = `${year}-${month.toString().padStart(2, '0')}-01T00:00:00-03:00`;
-        
-        // Local start of next month
-        let nextYear = year;
-        let nextMonth = month + 1;
-        if (nextMonth > 12) {
-          nextMonth = 1;
-          nextYear++;
-        }
-        const endDateStr = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01T00:00:00-03:00`;
-        
-        query = query.gte('timestamp', new Date(startDateStr).toISOString())
-                     .lt('timestamp', new Date(endDateStr).toISOString());
-      } else {
-        const activeRange = range || '24h';
-        let msRange = 24 * 3600 * 1000;
-        if (activeRange === '7d') msRange = 7 * 24 * 3600 * 1000;
-        if (activeRange === '30d') msRange = 30 * 24 * 3600 * 1000;
-        if (activeRange === '90d') msRange = 90 * 24 * 3600 * 1000;
-        if (activeRange === '1y') msRange = 365 * 24 * 3600 * 1000;
-        query = query.gte('timestamp', new Date(Date.now() - msRange).toISOString());
-      }
-      
-      const { data, error } = await query;
-         
-      if (error) {
-        console.error('[API History] Error fetching data:', error);
-        return res.status(500).json({ error: "Failed to fetch history" });
-      }
-      
-      return res.json(data.map(row => ({ 
-        timestamp: row.timestamp, 
-        f1: row.f1_hz,
-        f2: row.f2_hz,
-        f3: row.f3_hz,
-        quality: row.quality,
-        sourceType: row.source_type,
-        derivedFromImage: row.derived_from_image,
-        processor: row.processor
-      })));
-    }
-    
-    // MOCK DATA (Apenas se DATA_MODE=demo)
-    return res.json([]);
-  });
-
-
-
-  // Proxy para o Espectrograma de Tomsk
-  app.get('/api/spectrogram/tomsk', async (req, res) => {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-      
-      const targetUrl = 'https://sos70.ru/provider.php?file=shm.jpg';
-      const response = await fetch(targetUrl, { 
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; SchumannObservatory/1.1; +https://ressonanciaschumann.com)',
-          'Accept': 'image/jpeg,image/*;q=0.8'
-        }
-      });
-      clearTimeout(timeout);
-      
-      if (!response.ok) {
-        return res.status(response.status).send('Erro ao buscar espectrograma externo');
-      }
-      
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      
-      // Magic bytes check (FF D8 FF)
-      if (buffer.length < 3 || buffer[0] !== 0xFF || buffer[1] !== 0xD8 || buffer[2] !== 0xFF) {
-        console.error('[Spectrogram Proxy] Resposta upstream não é um JPEG válido.');
-        return res.status(502).send('Resposta inválida do servidor de origem');
-      }
-      
-      res.set('Content-Type', 'image/jpeg');
-      res.set('Cache-Control', 'public, max-age=300'); // 5 minutos cache
-      res.send(buffer);
-    } catch (error) {
-      console.error('[Spectrogram Proxy] Error:', error);
-      res.status(500).send('Espectrograma indisponível no momento');
-    }
-  });
+  app.get("/api/history", createHistoryHandler());
+  app.get('/api/spectrogram/tomsk', serveTomskSpectrogram);
 
   app.get("/robots.txt", (req, res) => {
     res.type('text/plain');
@@ -400,20 +271,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath, { extensions: ['html'] }));
-    app.get('*', (req, res) => {
-      if (process.env.PRERENDER === 'true') {
-        return res.sendFile(path.join(distPath, 'index.html'));
-      }
-
-      const notFoundPath = path.join(distPath, '404.html');
-      if (fs.existsSync(notFoundPath)) {
-        res.status(404).sendFile(notFoundPath);
-      } else {
-        res.status(404).send('Página não encontrada');
-      }
-    });
+    installStaticPages(app, path.join(process.cwd(), 'dist'), process.env.PRERENDER === 'true');
   }
 
   app.listen(PORT, "0.0.0.0", () => {

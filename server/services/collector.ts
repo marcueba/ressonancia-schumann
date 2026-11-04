@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { tomskProvider } from '../providers/SchumannProviders';
+import { isValidObservationTime } from './observation-time';
 
 let supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
 if (supabaseUrl && !supabaseUrl.startsWith('http')) {
@@ -36,8 +37,8 @@ export async function runCollector(): Promise<CollectorResult> {
 
     const data = result.data;
 
-    if (data.fundamental.frequency === null || !data.timestamp) {
-      console.log('[Collector] Ausência de observação válida (F1 null ou sem timestamp).');
+    if (!Number.isFinite(data.fundamental.frequency) || !isValidObservationTime(data.timestamp)) {
+      console.log('[Collector] Ausência de observação válida (F1 ou timestamp da fonte inválido).');
       return 'no_valid_observation';
     }
 
