@@ -26,6 +26,21 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Verify authorized Supabase target
+        run: |
+          bun -e '
+            const raw = process.env.SUPABASE_URL || "";
+            let url;
+            try { url = new URL(raw.startsWith("http") ? raw : `https://${raw}.supabase.co`); }
+            catch { throw new Error("Invalid Supabase target configuration"); }
+            if (url.protocol !== "https:" || url.hostname !== "ayutlntfobofyxzjsywb.supabase.co" || url.username || url.password) {
+              throw new Error("Supabase target is not the authorized Observatory project");
+            }
+            console.log("Authorized Observatory project confirmed");
+          '
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+
       - name: Run collector
         run: bun run collect:schumann
         env:
