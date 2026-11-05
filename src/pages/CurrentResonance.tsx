@@ -8,6 +8,7 @@ import { Activity, Info } from 'lucide-react';
 import { SchumannSpectrogramPanel } from '../components/SchumannSpectrogramPanel';
 import { ShareCardModal } from '../components/ShareCardModal';
 import { Share2 } from 'lucide-react';
+import { formatObservationTime } from '../utils/observationTime';
 
 export function CurrentResonance() {
   useSEO({ title: "Dados Atuais da Ressonância Schumann | Frequências Hoje", description: "Últimas observações da Ressonância Schumann hoje. Monitoramento das frequências F1, F2, F3 e intensidade relativa derivadas do espectrograma.", path: "/atual" });
@@ -68,7 +69,7 @@ export function CurrentResonance() {
           <CardHeader>
             <CardTitle as="h2" className="flex items-center gap-2">
               <Activity className="w-5 h-5" />
-              Observados agora
+              Última observação disponível
             </CardTitle>
           </CardHeader>
           <div className="space-y-4">
@@ -85,11 +86,11 @@ export function CurrentResonance() {
                 </div>
               ))
             ) : (
-              <div className="text-sm text-rose-400 py-4 text-center">Nenhum modo observável no momento.</div>
+              <div className="text-sm text-rose-400 py-4 text-center">Nenhum modo disponível nesta observação.</div>
             )}
             {data && (
-              <div className="pt-4 border-t border-border/50 text-xs text-text-muted flex justify-between">
-                <span>Horário da observação UTC: {new Date(data.timestamp).toLocaleString()}</span>
+              <div className="pt-4 border-t border-border/50 text-xs text-text-muted flex flex-col gap-2 sm:flex-row sm:justify-between">
+                <span>Data e hora da observação: {formatObservationTime(data.timestamp, 'UTC')}</span>
                 <span>Estação: {data.source || 'Tomsk'}</span>
               </div>
             )}

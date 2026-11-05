@@ -11,6 +11,7 @@ import { SchumannSpectrogramPanel } from '../components/SchumannSpectrogramPanel
 import { SocialShare } from '../components/SocialShare';
 import { ShareCardModal } from '../components/ShareCardModal';
 import { Share2 } from 'lucide-react';
+import { formatObservationTime, formatNoaaObservationTime } from '../utils/observationTime';
 
 export function Dashboard() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -189,9 +190,9 @@ export function Dashboard() {
                   </div>
                   
                   <div className="space-y-1 pt-3 border-t border-border">
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex flex-col gap-1 text-[11px]">
                       <span className="text-text-muted">Última observação disponível</span>
-                      <span className="text-text-main font-medium">{current?.timestamp ? new Date(current?.timestamp).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '--'}</span>
+                      <span className="text-text-main font-medium">{formatObservationTime(current.timestamp, 'America/Sao_Paulo')}</span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-text-muted">Proveniência</span>
@@ -228,9 +229,9 @@ export function Dashboard() {
                   </div>
                   
                   <div className="space-y-1 pt-3 border-t border-border">
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex flex-col gap-1 text-[11px]">
                       <span className="text-text-muted">Última observação disponível</span>
-                      <span className="text-text-main font-medium">{geo.recentKp?.[geo.recentKp.length - 1]?.time ? new Date(geo.recentKp[geo.recentKp.length - 1].time).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '--'}</span>
+                      <span className="text-text-main font-medium">{formatNoaaObservationTime(geo.recentKp?.[geo.recentKp.length - 1]?.time, 'America/Sao_Paulo')}</span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-text-muted">Fonte</span>
@@ -274,9 +275,9 @@ export function Dashboard() {
                   </div>
                   
                   <div className="space-y-1 pt-3 border-t border-border">
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex flex-col gap-1 text-[11px]">
                       <span className="text-text-muted">Última observação disponível</span>
-                      <span className="text-text-main font-medium">{solar.timestamp ? new Date(solar.timestamp).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '--'}</span>
+                      <span className="text-text-main font-medium">{formatNoaaObservationTime(solar.timestamp, 'America/Sao_Paulo')}</span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-text-muted">Fonte</span>

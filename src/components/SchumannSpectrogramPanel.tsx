@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from './ui/Card';
 import { AlertCircle, ImageOff, ExternalLink } from 'lucide-react';
+import { formatObservationTime } from '../utils/observationTime';
 
 interface SchumannSpectrogramPanelProps {
   currentF1?: number | null;
@@ -40,9 +41,7 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
     setLoading(false);
   };
 
-  const timeStr = timestamp 
-    ? new Date(timestamp).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })
-    : 'Desconhecido';
+  const timeStr = formatObservationTime(timestamp, 'America/Sao_Paulo');
 
   return (
     <Card className="overflow-hidden border border-border bg-background">
@@ -130,7 +129,7 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
 
           <div className="mt-8 pt-4 border-t border-border space-y-2">
             <p className="text-[10px] text-text-muted leading-tight mb-4">
-              * O timestamp da imagem de origem não é fornecido separadamente pela fonte.
+              * O timestamp da imagem de origem não é fornecido separadamente pela fonte. A data abaixo pertence aos valores numéricos derivados; a correspondência temporal com esta imagem não é conhecida.
             </p>
             <h4 className="text-[10px] uppercase tracking-widest text-text-muted mb-2">Proveniência</h4>
             <div className="text-xs flex justify-between">
@@ -145,8 +144,8 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
               <span className="text-text-muted">Processamento:</span>
               <span className="font-medium text-text-main">Externo</span>
             </div>
-            <div className="text-xs flex justify-between">
-              <span className="text-text-muted">Horário observação derivada:</span>
+            <div className="text-xs flex flex-col gap-1">
+              <span className="text-text-muted">Última observação numérica derivada disponível:</span>
               <span className="font-medium text-primary">{timeStr}</span>
             </div>
           </div>

@@ -11,6 +11,7 @@ import { installStaticPages } from "./server/services/static-pages";
 import { getERIState } from "./server/services/eri";
 import { createHistoryHandler } from "./server/services/history";
 import { serveTomskSpectrogram } from "./server/services/spectrogram";
+import { createSitemapHandler } from "./server/services/sitemap";
 
 dotenv.config();
 
@@ -248,20 +249,7 @@ async function startServer() {
     res.send("User-agent: *\nAllow: /\n\nSitemap: https://ressonanciaschumann.com/sitemap.xml");
   });
 
-  app.get("/sitemap.xml", (req, res) => {
-    res.type('application/xml');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://ressonanciaschumann.com/</loc></url>
-  <url><loc>https://ressonanciaschumann.com/atual</loc></url>
-  <url><loc>https://ressonanciaschumann.com/historico</loc></url>
-  <url><loc>https://ressonanciaschumann.com/estacoes</loc></url>
-  <url><loc>https://ressonanciaschumann.com/indice</loc></url>
-  <url><loc>https://ressonanciaschumann.com/geomagnetica</loc></url>
-  <url><loc>https://ressonanciaschumann.com/solar</loc></url>
-  <url><loc>https://ressonanciaschumann.com/metodologia</loc></url>
-</urlset>`);
-  });
+  app.get("/sitemap.xml", createSitemapHandler());
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
