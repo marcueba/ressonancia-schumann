@@ -1,7 +1,15 @@
 // Types for the backend implementation
 export interface NormalizedSchumannData {
   stationId: string;
-  timestamp: string; // ISO string
+  timestamp: string | null; // Measurement time only; never document/transport time.
+  available?: boolean;
+  availability?: 'available' | 'partial' | 'unavailable';
+  source_updated_at?: string | null;
+  estimated_observation_at?: string | null;
+  source_delay_hours?: number | null;
+  timestamp_basis?: 'source_update_minus_delay' | 'demo' | null;
+  is_historical?: boolean;
+  availability_reason?: string;
   fundamental: { frequency: number | null; amplitude: number | null; quality: string };
   mode2: { frequency: number | null; amplitude: number | null; quality: string };
   mode3: { frequency: number | null; amplitude: number | null; quality: string };
@@ -31,7 +39,8 @@ export interface ProviderResponse<T> {
   error?: string;
   message?: string;
   cached?: boolean;
-  timestamp: string;
+  errorCode?: string;
+  timestamp: string | null;
 }
 
 export interface XRayDataPoint {
@@ -39,6 +48,7 @@ export interface XRayDataPoint {
   flux: number | null;
   energy: string;
   satellite: number;
+  electronContaminated?: boolean;
 }
 
 export interface CurrentXRay {
@@ -82,6 +92,8 @@ export interface SolarData {
   imfTimestamp?: string | null;
   currentXRay?: CurrentXRay | null;
   xrayHistory?: XRayDataPoint[];
+  solarFluxTimestamp?: string | null;
+  productErrors?: Record<string, string>;
 }
 
 export interface KpDataPoint {

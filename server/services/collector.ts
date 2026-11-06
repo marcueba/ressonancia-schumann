@@ -29,6 +29,13 @@ export async function runCollector(): Promise<CollectorResult> {
     
     // 1. Obtém a leitura atual
     const result = await tomskProvider.getCurrent();
+
+    // A successfully parsed document can explicitly contain no observation.
+    // Preserve the no-data job result; transport/parser failures remain errors.
+    if (result.data?.available === false && result.data.availability === 'unavailable') {
+      console.log('[Collector] Documento da fonte sem observação válida.');
+      return 'no_valid_observation';
+    }
     
     if (!result.success || !result.data) {
       console.error('[Collector] Falha ao obter dados do provider.');

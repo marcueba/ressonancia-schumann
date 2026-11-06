@@ -6,6 +6,16 @@ import { SolarData } from '../types';
 import { Card } from '../components/ui/Card';
 import { XRayChart } from '../components/XRayChart';
 import { Sun } from 'lucide-react';
+import { formatNoaaObservationTime } from '../utils/observationTime';
+import { isPositiveFlux } from '../utils/xrayData';
+
+function productFailure(value: unknown): string {
+  const code = typeof value === 'string' ? value : undefined;
+  if (code?.startsWith('http_error:')) return 'O serviço NOAA retornou erro HTTP.';
+  return ({ timeout: 'A consulta NOAA excedeu o tempo limite.', transport_error: 'Falha de transporte ao consultar a NOAA.',
+    invalid_json: 'A NOAA retornou JSON inválido.', invalid_schema: 'A estrutura retornada pela NOAA não corresponde ao produto esperado.',
+    parser_error: 'Falha ao processar a resposta NOAA.', no_valid_data: 'O produto não contém valores válidos para exibição.' } as Record<string, string>)[code || ''] || 'Produto temporariamente indisponível.';
+}
 
 export function Solar() {
   useSEO({ title: "Atividade Solar Hoje | Vento Solar, Bz, F10.7 e Raios X", description: "Acompanhe a atividade solar atual. Monitoramento do vento solar, campo magnético interplanetário (Bz), fluxo solar F10.7 e erupções de Raios X (GOES).", path: "/solar" });
@@ -50,11 +60,21 @@ export function Solar() {
         </div>
       </div>
 
+      {data.productErrors && Object.keys(data.productErrors).length > 0 && (
+        <div role="status" className="text-sm text-text-muted border border-border rounded-lg p-4">
+          <p>Alguns produtos NOAA estão indisponíveis; os demais continuam apresentados.</p>
+          <ul className="mt-2 space-y-1">{Object.entries(data.productErrors).map(([product, code]) => <li key={product}>
+            {({ f107: 'F10.7', regions: 'Regiões ativas', flares: 'Eventos de raios X', wind: 'Vento solar', imf: 'Campo interplanetário', xray: 'GOES X-Ray' } as Record<string, string>)[product] || product}: {productFailure(code)}
+          </li>)}</ul>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="flex flex-col items-center justify-center py-10 px-4 text-center">
           <Sun className="w-10 h-10 text-gold mb-6 opacity-80" />
           <div className="text-sm tracking-widest text-text-muted uppercase mb-2">Fluxo de rádio solar F10.7</div>
-          <div className="text-5xl font-light text-text-main mb-4">{data.solarFlux != null && `${data.solarFlux} sfu`}</div>
+          <div className="text-5xl font-light text-text-main mb-4">{data.solarFlux != null ? `${data.solarFlux} sfu` : <span className="text-xl text-rose-400">F10.7 indisponível</span>}</div>
+          {data.solarFluxTimestamp && <p className="text-xs text-text-muted">{formatNoaaObservationTime(data.solarFluxTimestamp, 'UTC')}</p>}
+          {data.solarFlux === null && <p className="text-xs text-text-muted">{productFailure(data.productErrors?.f107)}</p>}
           <p className="text-xs text-text-muted mt-2">Fluxo de rádio solar medido em 10,7 cm (F10.7), utilizado como indicador de atividade solar.</p>
         </Card>
 
@@ -121,7 +141,7 @@ export function Solar() {
           <strong>Nota:</strong> Os dados solares são apresentados como contexto heliogeofísico e não constituem medições da Ressonância Schumann.
         </p>
 
-        {data.currentXRay && (
+        {data.currentXRay && isPositiveFlux(data.currentXRay.flux) && (
           <Card className="flex flex-col items-center justify-center py-6 px-4 text-center mb-8 max-w-sm mx-auto border-primary/20">
             <div className="text-xs tracking-widest text-text-muted uppercase mb-2">Classe Atual</div>
             <div className="text-4xl font-light text-primary mb-1">{data.currentXRay.flareClass}</div>
@@ -130,14 +150,15 @@ export function Solar() {
             </p>
             <p className="text-[10px] text-text-muted mt-2 border-t border-border/50 pt-2 w-full">
               Satélite: GOES-{data.currentXRay.satellite} ({data.currentXRay.energy})<br/>
-              Atualizado: {new Date(data.currentXRay.timestamp).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })}
+              Atualizado: {formatNoaaObservationTime(data.currentXRay.timestamp, 'America/Sao_Paulo')}
             </p>
           </Card>
         )}
 
         <div className="bg-surface border border-border/50 rounded-lg p-4">
           <div className="text-xs tracking-widest text-text-muted uppercase mb-4 text-center">Fluxo de Raios X (24 Horas)</div>
-          <XRayChart data={data.xrayHistory || []} />
+          <XRayChart data={data.xrayHistory || []} unavailableReason={data.productErrors?.xray ? productFailure(data.productErrors.xray) : undefined} />
+          <p className="text-xs text-text-muted mt-3">Fluxos ausentes, não positivos ou inválidos permanecem como lacunas; a linha não é suavizada. Horários do gráfico em São Paulo.</p>
         </div>
       </div>
 
@@ -148,9 +169,7 @@ export function Solar() {
           Fonte: <a href="https://www.swpc.noaa.gov/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">NOAA Space Weather Prediction Center (SWPC)</a>
         </p>
         <p className="text-xs text-text-muted">
-          {data.timestamp 
-            ? `Última atualização: ${new Date(data.timestamp).toLocaleTimeString('pt-BR', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit' })} UTC` 
-            : 'Última atualização: não disponível'}
+          Último horário conhecido entre os produtos disponíveis: {formatNoaaObservationTime(data.timestamp, 'UTC')}
         </p>
       </div>
 

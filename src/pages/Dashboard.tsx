@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
 import { useEffect, useState } from 'react';
 import { dataProvider } from '../data/dataProvider';
+import { loadDashboardSources } from '../data/dashboardSources';
 import { CurrentResonanceData, GeomagneticData, SolarData, HistoricalDataPoint } from '../types';
 import { Card, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { StatusBadge } from '../components/ui/StatusBadge';
@@ -11,7 +12,10 @@ import { SchumannSpectrogramPanel } from '../components/SchumannSpectrogramPanel
 import { SocialShare } from '../components/SocialShare';
 import { ShareCardModal } from '../components/ShareCardModal';
 import { Share2 } from 'lucide-react';
-import { formatObservationTime, formatNoaaObservationTime } from '../utils/observationTime';
+import { formatNoaaObservationTime } from '../utils/observationTime';
+import { SchumannTimes } from '../components/SchumannTimes';
+import { displayFrequency, schumannAvailability, schumannStatus } from '../utils/schumannState';
+import { isRelativeIntensity, isSchumannFrequency } from '../../shared/schumann';
 
 export function Dashboard() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -30,14 +34,10 @@ export function Dashboard() {
   useEffect(() => {
     async function load() {
       try {
-        const [c, g, s] = await Promise.all([
-          dataProvider.getCurrentData(),
-          dataProvider.getGeomagneticData(),
-          dataProvider.getSolarData()
-        ]);
-        setCurrent(c);
-        setGeo(g);
-        setSolar(s);
+        const sources = await loadDashboardSources();
+        setCurrent(sources.current);
+        setGeo(sources.geo);
+        setSolar(sources.solar);
       } catch (err) {
         console.error(err);
       } finally {
@@ -64,19 +64,19 @@ export function Dashboard() {
       });
   }, [historyRange]);
 
-  
-
+  const availability = schumannAvailability(current);
+  const hasFrequencies = availability !== 'unavailable';
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="text-center py-12 relative">
         <div className="absolute inset-0 bg-primary-glow blur-[120px] rounded-full opacity-20 pointer-events-none" />
         <h1 className="text-4xl md:text-5xl font-light tracking-[0.2em] text-text-main mb-4">MONITORAMENTO DA RESSONÂNCIA DE SCHUMANN</h1>
         <p className="text-lg text-text-muted font-light tracking-wide max-w-4xl mx-auto">
-          O sistema está operacional. {current ? 'Fonte ELF primária direta ainda não conectada.' : 'Observações eletromagnéticas ELF primárias ainda não estão conectadas.'} Os dados geomagnéticos, solares e contextuais apresentados possuem suas respectivas fontes identificadas.
+          Fonte ELF primária direta ainda não conectada. Os dados derivados de Schumann e os produtos geomagnéticos e solares são verificados separadamente.
         </p>
         <div className="mt-6 flex justify-center">
           <div className="px-4 py-2 bg-rose-900/30 border border-rose-700/50 rounded-full text-rose-300 text-sm font-medium">
-            {current ? 'Status: Observações derivadas disponíveis' : 'Status: Fonte ELF primária não conectada'}
+            {isLoading ? 'Consultando fontes...' : schumannStatus(current)}
           </div>
         </div>
       </div>
@@ -86,12 +86,12 @@ export function Dashboard() {
           <div className="absolute top-0 left-0 w-full h-1 bg-primary/40" />
           <Radio className="w-8 h-8 text-primary mb-4 opacity-50" />
           <div className="text-4xl font-light text-text-main mb-1 tracking-tight">
-            {current?.fundamental?.frequency ? current.fundamental.frequency.toFixed(2) : '--'} <span className="text-xl text-text-muted">Hz</span>
+            {displayFrequency(current?.fundamental?.frequency, 2)} <span className="text-xl text-text-muted">Hz</span>
           </div>
           <div className="text-sm tracking-widest text-text-muted uppercase">
-            {current ? 'F1 — FREQUÊNCIA DERIVADA' : 'Frequência Fundamental'}
+            {isSchumannFrequency(current?.fundamental?.frequency) ? 'F1 — FREQUÊNCIA DERIVADA' : 'F1 — INDISPONÍVEL'}
           </div>
-          {current && (
+          {isSchumannFrequency(current?.fundamental?.frequency) && (
             <div className="text-[10px] text-text-muted mt-2">Dado derivado de espectrograma</div>
           )}
         </Card>
@@ -99,7 +99,7 @@ export function Dashboard() {
         <Card className="flex flex-col items-center justify-center py-8 text-center bg-surface-hover/20 relative group">
           <Activity className="w-8 h-8 text-violet mb-4" />
           <div className="text-4xl font-light text-text-main mb-1 tracking-tight">
-            {current?.relativeIntensity ? (
+            {isRelativeIntensity(current?.relativeIntensity?.value) ? (
               <>{current.relativeIntensity.value.toFixed(1)} <span className="text-xl text-text-muted">/ 100</span></>
             ) : '--'}
           </div>
@@ -145,7 +145,9 @@ export function Dashboard() {
           currentF1={current?.fundamental?.frequency}
           currentF2={current?.mode2?.frequency}
           currentF3={current?.mode3?.frequency}
-          timestamp={current?.timestamp}
+          timestamp={current?.estimated_observation_at ?? current?.timestamp}
+          sourceUpdatedAt={current?.source_updated_at}
+          historical={current?.is_historical}
         />
       </div>
       
@@ -171,29 +173,27 @@ export function Dashboard() {
               {isLoading && !current ? (
                 <div className="text-sm text-text-muted flex-1 flex items-center justify-center">Buscando...</div>
               ) : !current ? (
-                <div className="text-sm text-rose-400 flex-1 flex items-center justify-center">Dados indisponíveis no momento.</div>
+                <div className="text-sm text-rose-400 flex-1 flex items-center justify-center">Falha ao consultar os dados Schumann.</div>
               ) : (
                 <>
+                  <p className="text-xs text-amber-400 mb-3">{schumannStatus(current)}</p>
                   <div className="grid grid-cols-3 gap-2 text-center mb-4">
                     <div className="bg-surface rounded p-2">
                       <div className="text-[10px] text-text-muted uppercase mb-1">F1</div>
-                      <div className="text-lg font-light text-text-main">{current?.fundamental?.frequency?.toFixed(1) || '--'}</div>
+                      <div className="text-lg font-light text-text-main">{displayFrequency(current.fundamental?.frequency)}</div>
                     </div>
                     <div className="bg-surface rounded p-2">
                       <div className="text-[10px] text-text-muted uppercase mb-1">F2</div>
-                      <div className="text-lg font-light text-text-main">{current?.mode2?.frequency?.toFixed(1) || '--'}</div>
+                      <div className="text-lg font-light text-text-main">{displayFrequency(current.mode2?.frequency)}</div>
                     </div>
                     <div className="bg-surface rounded p-2">
                       <div className="text-[10px] text-text-muted uppercase mb-1">F3</div>
-                      <div className="text-lg font-light text-text-main">{current?.mode3?.frequency?.toFixed(1) || '--'}</div>
+                      <div className="text-lg font-light text-text-main">{displayFrequency(current.mode3?.frequency)}</div>
                     </div>
                   </div>
                   
                   <div className="space-y-1 pt-3 border-t border-border">
-                    <div className="flex flex-col gap-1 text-[11px]">
-                      <span className="text-text-muted">Última observação disponível</span>
-                      <span className="text-text-main font-medium">{formatObservationTime(current.timestamp, 'America/Sao_Paulo')}</span>
-                    </div>
+                    <SchumannTimes data={current} zone="America/Sao_Paulo" />
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-text-muted">Proveniência</span>
                       <span className="text-text-main">{current?.source_type === 'derived_spectrogram' ? 'Derivado (Espectrograma)' : current?.source || '--'}</span>
@@ -276,7 +276,7 @@ export function Dashboard() {
                   
                   <div className="space-y-1 pt-3 border-t border-border">
                     <div className="flex flex-col gap-1 text-[11px]">
-                      <span className="text-text-muted">Última observação disponível</span>
+                      <span className="text-text-muted">Horário mais recente entre os produtos disponíveis</span>
                       <span className="text-text-main font-medium">{formatNoaaObservationTime(solar.timestamp, 'America/Sao_Paulo')}</span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
@@ -316,9 +316,9 @@ export function Dashboard() {
                   <span className="text-text-muted">Tipo:</span>
                   <span className="font-medium text-text-main">Espectrograma ELF</span>
                   <span className="text-text-muted">Valor numérico:</span>
-                  <span className="font-medium text-text-main">Derivado computacionalmente da imagem</span>
+                  <span className="font-medium text-text-main">{hasFrequencies ? 'Derivado computacionalmente da imagem' : 'Nenhuma frequência válida no documento recebido'}</span>
                   <span className="text-text-muted">Classificação:</span>
-                  <span className="font-medium text-amber-400">Observação derivada</span>
+                  <span className="font-medium text-amber-400">{schumannStatus(current)}</span>
                 </div>
               )}
             </div>
@@ -360,7 +360,10 @@ export function Dashboard() {
           f2: current?.mode2?.frequency ?? null,
           f3: current?.mode3?.frequency ?? null,
           intensity: current?.relativeIntensity?.value ?? null,
-          timestamp: current?.timestamp ?? null
+          timestamp: current?.estimated_observation_at ?? current?.timestamp ?? null,
+          sourceUpdatedAt: current?.source_updated_at ?? null,
+          historical: current?.is_historical,
+          availability
         }}
       />
     </div>

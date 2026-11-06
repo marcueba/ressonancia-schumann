@@ -69,7 +69,11 @@ const routes = ['/indice', '/artigos', '/artigos/o-que-e-ressonancia-schumann',
               { timeout: 10000 }, 'https://ressonanciaschumann.com' + route);
           }
           if (route === '/indice') assert.match(await page.$eval('main', el => el.textContent), /Em desenvolvimento/);
-          if (route === '/historico') await page.waitForSelector('text/Erro ao carregar o histórico.', { timeout: 10000 });
+          if (route === '/historico') {
+            await page.waitForSelector('[role="alert"]', { timeout: 10000 });
+            assert.match(await page.$eval('[role="alert"]', el => el.textContent), /Não foi possível consultar o histórico/);
+            assert.doesNotMatch(await page.$eval('main', el => el.textContent), /Nenhum registro disponível neste período/);
+          }
           assert.deepEqual(errors, []);
           console.log(JSON.stringify({ width, route, reload, status: response.status(), pageErrors: errors }));
         }

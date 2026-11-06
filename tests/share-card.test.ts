@@ -19,9 +19,12 @@ test('historical share card uses one visible/exported card and explicit UTC, wit
 
 test('missing values and invalid observation time remain unavailable, while a real zero stays zero', () => {
   const missing = render({ f1: null, f2: null, f3: null, intensity: null, timestamp: 'invalid' });
-  assert.match(missing, /Data da observação indisponível/);
+  assert.match(missing, /SEM OBSERVAÇÃO VÁLIDA/);
   assert.ok((missing.match(/—/g) || []).length >= 4);
   assert.doesNotMatch(missing, /NaN|Invalid Date|1970|>0\.0</);
   const zero = render({ f1: 0, f2: null, f3: null, intensity: 0, timestamp: null });
-  assert.equal((zero.match(/>0\.0(?:<| )/g) || []).length, 2);
+  assert.equal((zero.match(/>0\.0(?:<| )/g) || []).length, 1, 'relative zero is valid; zero Hz is not a mode');
+  const timestampOnly = render({ f1: null, f2: null, f3: null, intensity: null, timestamp: '2026-11-05T15:42:00Z' });
+  assert.match(timestampOnly, /SEM OBSERVAÇÃO VÁLIDA|Schumann indisponível/);
+  assert.doesNotMatch(timestampOnly, /Última observação disponível|05\/11\/2026, 15:42:00 UTC/);
 });

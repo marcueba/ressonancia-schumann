@@ -1,13 +1,18 @@
-import { ProviderResponse, SolarData, NoaaRtswWind, NoaaRtswMag, NoaaGoesXray, XRayDataPoint, CurrentXRay, KpDataPoint } from '../types';
-
-export interface NoaaKp {
-  time_tag: string;
-  Kp: string;
-  a_running: number;
-  station_count: number;
-}
+import type { ProviderResponse, SolarData, XRayDataPoint, CurrentXRay, KpDataPoint } from '../types';
 import { apiCache } from '../services/cache';
+import { parseObservationTime } from '../../src/utils/observationTime';
+import { flareClass, isPositiveFlux, prepareXRayHistory, XRAY_BAND } from '../../src/utils/xrayData';
 
+const urls = {
+  f107: 'https://services.swpc.noaa.gov/json/f107_cm_flux.json',
+  regions: 'https://services.swpc.noaa.gov/json/solar_regions.json',
+  flares: 'https://services.swpc.noaa.gov/json/edited_events.json',
+  wind: 'https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json',
+  imf: 'https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json',
+  xray: 'https://services.swpc.noaa.gov/json/goes/primary/xrays-1-day.json',
+};
+const KP_URL = 'https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json';
+type Row = Record<string, any>;
 export interface GeoData {
   currentKp: number | null;
   recentKp: { time: string; kp: number }[];
@@ -15,7 +20,58 @@ export interface GeoData {
   status: string;
 }
 
+class NoaaError extends Error { constructor(public code: string) { super(code); } }
 
+/** Known NOAA time_tag convention: no suffix means UTC, not the server's timezone. */
+export function noaaTime(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const normalized = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(value)
+    ? value.replace(' ', 'T') + 'Z' : value;
+  return parseObservationTime(normalized)?.toISOString() ?? null;
+}
+const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+
+export async function fetchNoaaRows(url: string, source: typeof fetch = fetch, timeoutMs = 10000): Promise<Row[]> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout>;
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => { reject(new NoaaError('timeout')); controller.abort(); }, timeoutMs);
+  });
+  try {
+    let response: Response;
+    try { response = await Promise.race([source(url, { signal: controller.signal }), deadline]); }
+    catch (error) { if (error instanceof NoaaError) throw error; throw new NoaaError('transport_error'); }
+    if (!response.ok) { void response.body?.cancel().catch(() => {}); throw new NoaaError(`http_error:${response.status}`); }
+    let raw: unknown;
+    try { raw = await Promise.race([response.json(), deadline]); }
+    catch (error) { if (error instanceof NoaaError) throw error; throw new NoaaError(error instanceof SyntaxError ? 'invalid_json' : 'transport_error'); }
+    if (!Array.isArray(raw) || raw.some(row => !row || typeof row !== 'object' || Array.isArray(row))) throw new NoaaError('invalid_schema');
+    return raw;
+  } finally { clearTimeout(timer!); controller.abort(); }
+}
+
+export function normalizeXrays(raw: Row[]): { history: XRayDataPoint[]; current: CurrentXRay | null } {
+  if (raw.length && !raw.some(row => typeof row.energy === 'string' && 'flux' in row && 'time_tag' in row)) throw new NoaaError('invalid_schema');
+  const records = raw.filter(row => row.energy === XRAY_BAND && noaaTime(row.time_tag) && finite(row.satellite))
+    .map(row => ({ time_tag: noaaTime(row.time_tag)!, flux: isPositiveFlux(row.flux) ? row.flux : null,
+      energy: row.energy, satellite: row.satellite,
+      // NOAA reports corrected flux; this flag is context, not a generic bad-data flag.
+      electronContaminated: row.electron_contaminaton === true || row.electron_contamination === true,
+    }));
+  const history = prepareXRayHistory(records);
+  const latest = [...history].reverse().find(point => isPositiveFlux(point.flux));
+  return { history, current: latest ? { flux: latest.flux!, energy: latest.energy, satellite: latest.satellite,
+    flareClass: flareClass(latest.flux!), timestamp: latest.time_tag } : null };
+}
+
+export function normalizeKp(raw: Row[]): KpDataPoint[] {
+  if (raw.length && !raw.some(row => 'Kp' in row && 'time_tag' in row)) throw new NoaaError('invalid_schema');
+  return raw.flatMap(row => {
+    const value = typeof row.Kp === 'string' && row.Kp.trim() !== '' ? Number(row.Kp) : row.Kp;
+    const timestamp = noaaTime(row.time_tag);
+    return timestamp && finite(value) && value >= 0 && value <= 9 ? [{ time_tag: timestamp, kp: value }] : [];
+  }).sort((a, b) => Date.parse(a.time_tag) - Date.parse(b.time_tag));
+}
 
 export class NoaaProvider {
   private getStatusFromKp(kp: number): string {
@@ -24,7 +80,6 @@ export class NoaaProvider {
     if (kp <= 4.66) return 'Ativa';
     return 'Tempestade Geomagnética';
   }
-
   private getStatusFromFlux(flux: number): string {
     if (flux < 90) return 'Baixa';
     if (flux < 120) return 'Moderada';
@@ -32,274 +87,79 @@ export class NoaaProvider {
     return 'Muito Elevada';
   }
 
-  
-  private getFlareClass(flux: number): string {
-    if (flux < 1e-7) return `A${(flux * 1e8).toFixed(1)}`;
-    if (flux < 1e-6) return `B${(flux * 1e7).toFixed(1)}`;
-    if (flux < 1e-5) return `C${(flux * 1e6).toFixed(1)}`;
-    if (flux < 1e-4) return `M${(flux * 1e5).toFixed(1)}`;
-    return `X${(flux * 1e4).toFixed(1)}`;
-  }
-
   async getGeomagnetic(): Promise<ProviderResponse<GeoData>> {
-    const isLive = process.env.DATA_MODE === 'live';
-    const cacheKey = 'geomagnetic_noaa';
-
-    if (!isLive) {
-      return {
-        success: true,
-        data: { currentKp: 3, recentKp: [], history: [], status: 'Instável (DEMO)' },
-        timestamp: new Date().toISOString()
-      };
-    }
-
-    return apiCache.resolve(cacheKey, async () => {
+    if (process.env.DATA_MODE !== 'live') return { success: true, data: { currentKp: 3, recentKp: [], history: [], status: 'Instável (DEMO)' }, timestamp: new Date().toISOString() };
+    return apiCache.resolve('geomagnetic_noaa', async () => {
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
-        let response;
-        try {
-          response = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json', { signal: controller.signal });
-        } finally {
-          clearTimeout(timeout);
-        }
-        if (!response.ok) throw new Error('NOAA API failure');
-        
-        const data: NoaaKp[] = await response.json();
-        
-        if (!Array.isArray(data) || data.length === 0) throw new Error('NOAA returned empty dataset');
-
-        // Extract the last 72 hours (since it's 3-hour data, that's 24 items)
-        const recentItems = data.slice(-24);
-        
-        const history = recentItems.map(item => ({
-          time_tag: item.time_tag,
-          kp: parseFloat(item.Kp)
-        })).filter(k => !isNaN(k.kp));
-
-        const recentKp = history.slice(-8).map(h => ({ time: h.time_tag, kp: h.kp }));
-
-        const currentKpObj = data[data.length - 1];
-        const currentKp = currentKpObj && currentKpObj.Kp !== undefined ? parseFloat(currentKpObj.Kp) : null;
-
-        const geoData: GeoData = {
-          currentKp,
-          recentKp,
-          history,
-          status: currentKp !== null ? this.getStatusFromKp(currentKp) : 'Indisponível'
-        };
-
-        const result = { success: true, data: geoData, timestamp: currentKpObj?.time_tag || new Date().toISOString() };
-        apiCache.set(cacheKey, result, 900); // 15 minutos cache para janela de 3h
+        const history = normalizeKp(await fetchNoaaRows(KP_URL)).slice(-24);
+        if (!history.length) throw new NoaaError('no_valid_data');
+        const latest = history[history.length - 1];
+        const result = { success: true, data: { currentKp: latest.kp, recentKp: history.slice(-8).map(point => ({ time: point.time_tag, kp: point.kp })), history,
+          status: this.getStatusFromKp(latest.kp) }, timestamp: latest.time_tag };
+        apiCache.set('geomagnetic_noaa', result, 900);
         return result;
-
-      } catch (error: any) {
-        return {
-          success: false,
-          available: false,
-          error: 'Dados geomagnéticos NOAA temporariamente indisponíveis.',
-          timestamp: new Date().toISOString()
-        };
+      } catch (error) {
+        const code = error instanceof NoaaError ? error.code : 'parser_error';
+        return { success: false, errorCode: code, error: `Falha na consulta geomagnética NOAA (${code}).`, timestamp: null };
       }
     });
   }
 
   async getSolar(): Promise<ProviderResponse<SolarData>> {
-    const isLive = process.env.DATA_MODE === 'live';
-    const cacheKey = 'solar_noaa';
-
-    if (!isLive) {
-      return {
-        success: true,
-        data: { solarFlux: 145, sunspots: 78, flares: "M1.2 (Recente)", status: 'Ativa (DEMO)', solarWindSpeed: 420.5, protonDensity: 5.2, bz: -2.3, bt: 6.1, currentXRay: { flux: 3.2e-6, energy: '0.1-0.8nm', satellite: 16, flareClass: 'C3.2', timestamp: new Date().toISOString() }, xrayHistory: [] },
-        timestamp: new Date().toISOString()
-      };
-    }
-
-    return apiCache.resolve(cacheKey, async () => {
+    if (process.env.DATA_MODE !== 'live') return { success: true, data: { solarFlux: 145, sunspots: 78, flares: 'M1.2 (DEMO)', status: 'Ativa (DEMO)', solarWindSpeed: 420.5, protonDensity: 5.2, bz: -2.3, bt: 6.1,
+      currentXRay: { flux: 3.2e-6, energy: XRAY_BAND, satellite: 16, flareClass: 'C3.2', timestamp: new Date().toISOString() }, xrayHistory: [] }, timestamp: new Date().toISOString() };
+    return apiCache.resolve('solar_noaa', async () => {
+      const productErrors: Record<string, string> = {};
+      const products = Object.fromEntries(await Promise.all(Object.entries(urls).map(async ([name, url]) => {
+        try {
+          const rows = await fetchNoaaRows(url);
+          const fields: Record<string, string[]> = { f107: ['time_tag', 'flux'], regions: ['observed_date'], flares: ['type'], wind: ['time_tag', 'proton_speed', 'proton_density'], imf: ['time_tag', 'bz_gsm', 'bt'], xray: ['time_tag', 'energy', 'flux'] };
+          if (rows.length && !rows.some(row => fields[name].every(field => field in row))) throw new NoaaError('invalid_schema');
+          return [name, rows];
+        }
+        catch (error) { productErrors[name] = error instanceof NoaaError ? error.code : 'parser_error'; return [name, []]; }
+      }))) as Record<keyof typeof urls, Row[]>;
+      const times: string[] = [];
+      const timed = (rows: Row[]): Row[] => rows.flatMap(row => {
+        const timestamp = noaaTime(row.time_tag);
+        return timestamp ? [{ ...row, time_tag: timestamp }] : [];
+      }).sort((a, b) => Date.parse(a.time_tag) - Date.parse(b.time_tag));
+      const latestFlux = timed(products.f107).filter(row => isPositiveFlux(row.flux)).at(-1);
+      const solarFlux = latestFlux?.flux ?? null;
+      const solarFluxTimestamp = latestFlux?.time_tag ?? null;
+      if (solarFluxTimestamp) times.push(solarFluxTimestamp);
+      else if (!productErrors.f107) productErrors.f107 = 'no_valid_data';
+      let sunspots: number | null = null;
+      const regionDates = products.regions.filter(row => /^\d{4}-\d{2}-\d{2}$/.test(row.observed_date)).map(row => row.observed_date).sort();
+      if (regionDates.length) sunspots = products.regions.filter(row => row.observed_date === regionDates.at(-1)).length;
+      else if (!productErrors.regions) productErrors.regions = 'no_valid_data';
+      let flares: string | null = null;
+      const events = products.flares.filter(row => row.type === 'XRA');
+      if (events.length) flares = typeof events.at(-1)?.particulars1 === 'string' ? events.at(-1)!.particulars1 : null;
+      else if (!productErrors.flares) flares = 'Nenhum flare XRA retornado neste produto';
+      else if (!productErrors.flares) productErrors.flares = 'no_valid_data';
+      const latestWind = timed(products.wind).filter(row => finite(row.proton_speed) && row.proton_speed > 0 && finite(row.proton_density) && row.proton_density >= 0).at(-1);
+      const latestMag = timed(products.imf).filter(row => finite(row.bz_gsm) && finite(row.bt) && row.bt >= 0).at(-1);
+      const solarWindTimestamp = latestWind?.time_tag ?? null, imfTimestamp = latestMag?.time_tag ?? null;
+      if (solarWindTimestamp) times.push(solarWindTimestamp); else if (!productErrors.wind) productErrors.wind = 'no_valid_data';
+      if (imfTimestamp) times.push(imfTimestamp); else if (!productErrors.imf) productErrors.imf = 'no_valid_data';
+      let currentXRay: CurrentXRay | null = null, xrayHistory: XRayDataPoint[] = [];
       try {
-        // Fetch Flux
-        const resFlux = await fetch('https://services.swpc.noaa.gov/json/f107_cm_flux.json');
-        if (!resFlux.ok) throw new Error('NOAA API failure for solar flux');
-        const dataFlux: any[] = await resFlux.json();
-        const validFlux = dataFlux.filter(item => item.time_tag && item.flux !== undefined && item.flux !== null);
-        validFlux.sort((a, b) => new Date(b.time_tag).getTime() - new Date(a.time_tag).getTime());
-        const flux = validFlux.length > 0 ? parseFloat(validFlux[0].flux) : null;
-
-        // Fetch Regions (using as proxy for active sunspot regions)
-        let sunspots = null;
-        try {
-          const resRegions = await fetch('https://services.swpc.noaa.gov/json/solar_regions.json');
-          if (resRegions.ok) {
-            const dataRegions: any[] = await resRegions.json();
-            // Count regions from the latest observed_date
-            if (dataRegions.length > 0) {
-              const latestDate = dataRegions[dataRegions.length - 1].observed_date;
-              const currentRegions = dataRegions.filter(r => r.observed_date === latestDate);
-              sunspots = currentRegions.length; // We use region count
-            }
-          }
-        } catch(e) {
-          console.warn("NOAA solar_regions fetch failed", e);
-        }
-
-        // Fetch Flares
-        let flares = null;
-        try {
-          const resFlares = await fetch('https://services.swpc.noaa.gov/json/edited_events.json');
-          if (resFlares.ok) {
-            const dataFlares: any[] = await resFlares.json();
-            const xraEvents = dataFlares.filter(ev => ev.type === 'XRA');
-            if (xraEvents.length > 0) {
-              const latestEvent = xraEvents[xraEvents.length - 1];
-              flares = latestEvent.particulars1 || "Recente";
-            } else {
-              flares = "Nenhum flare XRA recente no período monitorado";
-            }
-          }
-        } catch(e) {
-          console.warn("NOAA flares fetch failed", e);
-        }
-
-        
-        // Fetch Solar Wind (Plasma)
-        let solarWindSpeed = null;
-        let protonDensity = null;
-        let solarWindTimestamp = null;
-        try {
-          const resWind = await fetch('https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json');
-          if (resWind.ok) {
-            const dataWind: NoaaRtswWind[] = await resWind.json();
-            // Find the most recent active/valid entry
-            for (let i = dataWind.length - 1; i >= 0; i--) {
-              const item = dataWind[i];
-              if (item.proton_speed != null && item.proton_density != null) {
-                solarWindSpeed = item.proton_speed;
-                protonDensity = item.proton_density;
-                solarWindTimestamp = item.time_tag;
-                break;
-              }
-            }
-          }
-        } catch(e) {
-          console.warn("NOAA solar wind fetch failed", e);
-        }
-
-        // Fetch IMF (Mag)
-        let bz = null;
-        let bt = null;
-        let imfTimestamp = null;
-        try {
-          const resMag = await fetch('https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json');
-          if (resMag.ok) {
-            const dataMag: NoaaRtswMag[] = await resMag.json();
-            for (let i = dataMag.length - 1; i >= 0; i--) {
-              const item = dataMag[i];
-              if (item.bz_gsm != null && item.bt != null) {
-                bz = item.bz_gsm;
-                bt = item.bt;
-                imfTimestamp = item.time_tag;
-                break;
-              }
-            }
-          }
-        } catch(e) {
-          console.warn("NOAA mag fetch failed", e);
-        }
-
-        
-        // Fetch GOES X-Ray
-        let currentXRay = null;
-        let xrayHistory: XRayDataPoint[] = [];
-        try {
-          const resXray = await fetch('https://services.swpc.noaa.gov/json/goes/primary/xrays-1-day.json');
-          if (resXray.ok) {
-            const dataXray: NoaaGoesXray[] = await resXray.json();
-            // Filter for 0.1-0.8nm band (typically used for flare classification)
-            const primaryBand = dataXray.filter(d => d.energy === '0.1-0.8nm');
-            
-            
-            const rawHistory = primaryBand.map(d => ({
-              time_tag: d.time_tag,
-              flux: d.flux,
-              energy: d.energy,
-              satellite: d.satellite
-            }));
-            
-            // Insert nulls for gaps > 90 seconds
-            xrayHistory = [];
-            for (let i = 0; i < rawHistory.length; i++) {
-              xrayHistory.push(rawHistory[i]);
-              if (i < rawHistory.length - 1) {
-                const t1 = new Date(rawHistory[i].time_tag).getTime();
-                const t2 = new Date(rawHistory[i+1].time_tag).getTime();
-                if (t2 - t1 > 90000) {
-                  // Add a null point slightly after t1 to break the line visually
-                  xrayHistory.push({
-                    time_tag: new Date(t1 + 1000).toISOString(),
-                    flux: null,
-                    energy: rawHistory[i].energy,
-                    satellite: rawHistory[i].satellite
-                  });
-                }
-              }
-            }
-
-
-            if (primaryBand.length > 0) {
-              const latest = primaryBand[primaryBand.length - 1];
-              currentXRay = {
-                flux: latest.flux,
-                energy: latest.energy,
-                satellite: latest.satellite,
-                flareClass: this.getFlareClass(latest.flux),
-                timestamp: latest.time_tag
-              };
-            }
-          }
-        } catch(e) {
-          console.warn("NOAA xray fetch failed", e);
-        }
-
-        if (flux === null || isNaN(flux)) {
-
-
-           throw new Error('Fluxo solar F10.7 inválido ou indisponível');
-        }
-
-        const solarData = {
-          solarFlux: flux,
-          sunspots: sunspots,
-          flares: flares,
-          status: this.getStatusFromFlux(flux),
-          solarWindSpeed,
-          protonDensity,
-          bz,
-          bt,
-          solarWindTimestamp,
-          imfTimestamp,
-          currentXRay,
-          xrayHistory
-        };
-
-        const result = { 
-          success: true, 
-          data: solarData, 
-          timestamp: validFlux[0].time_tag || new Date().toISOString()
-        };
-        
-        apiCache.set(cacheKey, result, 300);
-        return result;
-      } catch (error: any) {
-        return {
-          success: false,
-          available: false,
-          error: 'Dados solares NOAA temporariamente indisponíveis.',
-          timestamp: new Date().toISOString()
-        };
+        ({ current: currentXRay, history: xrayHistory } = normalizeXrays(products.xray));
+        if (currentXRay) times.push(currentXRay.timestamp);
+        else if (!productErrors.xray) productErrors.xray = 'no_valid_data';
+      } catch (error) { productErrors.xray = error instanceof NoaaError ? error.code : 'parser_error'; }
+      const solarData: SolarData = { solarFlux, solarFluxTimestamp, sunspots, flares, status: solarFlux === null ? 'F10.7 indisponível' : this.getStatusFromFlux(solarFlux),
+        solarWindSpeed: latestWind?.proton_speed ?? null, protonDensity: latestWind?.proton_density ?? null,
+        bz: latestMag?.bz_gsm ?? null, bt: latestMag?.bt ?? null, solarWindTimestamp, imfTimestamp, currentXRay, xrayHistory, productErrors };
+      if (solarFlux === null && sunspots === null && !events.some(row => typeof row.particulars1 === 'string') && !latestWind && !latestMag && !currentXRay) {
+        return { success: false, data: solarData, errorCode: 'noaa_products_unavailable', error: 'Não foi possível obter medições solares válidas da NOAA.', timestamp: null };
       }
+      const result = { success: true, data: solarData, timestamp: times.sort().at(-1) ?? null,
+        ...(Object.keys(productErrors).length ? { message: 'Disponibilidade parcial dos produtos NOAA.' } : {}) };
+      apiCache.set('solar_noaa', result, 300);
+      return result;
     });
   }
 }
-
 export const noaaProvider = new NoaaProvider();

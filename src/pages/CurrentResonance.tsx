@@ -8,7 +8,9 @@ import { Activity, Info } from 'lucide-react';
 import { SchumannSpectrogramPanel } from '../components/SchumannSpectrogramPanel';
 import { ShareCardModal } from '../components/ShareCardModal';
 import { Share2 } from 'lucide-react';
-import { formatObservationTime } from '../utils/observationTime';
+import { SchumannTimes } from '../components/SchumannTimes';
+import { schumannAvailability, schumannStatus } from '../utils/schumannState';
+import { isSchumannFrequency } from '../../shared/schumann';
 
 export function CurrentResonance() {
   useSEO({ title: "Dados Atuais da Ressonância Schumann | Frequências Hoje", description: "Últimas observações da Ressonância Schumann hoje. Monitoramento das frequências F1, F2, F3 e intensidade relativa derivadas do espectrograma.", path: "/atual" });
@@ -31,12 +33,13 @@ export function CurrentResonance() {
 
   if (loading) return <div className="p-8 text-center text-text-muted">Carregando dados...</div>;
 
-  const observedModes = [];
-  if (data && data.fundamental.frequency !== null) observedModes.push({ name: "F1 (Fundamental)", freq: data.fundamental.frequency, quality: data.fundamental.quality });
-  if (data && data.mode2.frequency !== null) observedModes.push({ name: "F2", freq: data.mode2.frequency, quality: data.mode2.quality });
-  if (data && data.mode3.frequency !== null) observedModes.push({ name: "F3", freq: data.mode3.frequency, quality: data.mode3.quality });
-  if (data && data.mode4.frequency !== null) observedModes.push({ name: "F4", freq: data.mode4.frequency, quality: data.mode4.quality });
-  if (data && data.mode5.frequency !== null) observedModes.push({ name: "F5", freq: data.mode5.frequency, quality: data.mode5.quality });
+  const availability = schumannAvailability(data);
+  const observedModes = availability === 'unavailable' ? [] : [
+    { name: 'F1 (Fundamental)', mode: data?.fundamental },
+    { name: 'F2', mode: data?.mode2 }, { name: 'F3', mode: data?.mode3 },
+    { name: 'F4', mode: data?.mode4 }, { name: 'F5', mode: data?.mode5 },
+  ].flatMap(({ name, mode }) => isSchumannFrequency(mode?.frequency)
+    ? [{ name, freq: mode.frequency, quality: mode.quality }] : []);
 
   const theoreticalModes = [
     { name: "F1", freq: "~7.83" },
@@ -69,7 +72,7 @@ export function CurrentResonance() {
           <CardHeader>
             <CardTitle as="h2" className="flex items-center gap-2">
               <Activity className="w-5 h-5" />
-              Última observação disponível
+              {schumannStatus(data)}
             </CardTitle>
           </CardHeader>
           <div className="space-y-4">
@@ -86,11 +89,11 @@ export function CurrentResonance() {
                 </div>
               ))
             ) : (
-              <div className="text-sm text-rose-400 py-4 text-center">Nenhum modo disponível nesta observação.</div>
+              <div className="text-sm text-rose-400 py-4 text-center">{data ? 'A fonte não forneceu frequências válidas. Não há observação numérica disponível.' : 'Não foi possível consultar os dados Schumann.'}</div>
             )}
             {data && (
               <div className="pt-4 border-t border-border/50 text-xs text-text-muted flex flex-col gap-2 sm:flex-row sm:justify-between">
-                <span>Data e hora da observação: {formatObservationTime(data.timestamp, 'UTC')}</span>
+                <SchumannTimes data={data} zone="UTC" />
                 <span>Estação: {data.source || 'Tomsk'}</span>
               </div>
             )}
@@ -113,16 +116,16 @@ export function CurrentResonance() {
         </Card>
       </div>
       
-      {data && (
-        <div className="mt-6">
+      <div className="mt-6">
           <SchumannSpectrogramPanel 
-            currentF1={data.fundamental.frequency}
-            currentF2={data.mode2.frequency}
-            currentF3={data.mode3.frequency}
-            timestamp={data.timestamp}
+            currentF1={data?.fundamental?.frequency}
+            currentF2={data?.mode2?.frequency}
+            currentF3={data?.mode3?.frequency}
+            timestamp={data?.estimated_observation_at ?? data?.timestamp}
+            sourceUpdatedAt={data?.source_updated_at}
+            historical={data?.is_historical}
           />
         </div>
-      )}
       
       {data && data.derived_from_image && (
         <Card className="mt-6 bg-surface/50 border-primary/20">
@@ -133,7 +136,7 @@ export function CurrentResonance() {
             </CardTitle>
           </CardHeader>
           <p className="text-sm text-text-muted leading-relaxed">
-            A estação de Tomsk publica um espectrograma ELF. A frequência exibida aqui é uma estimativa computacional derivada desse espectrograma. Por isso, ela é apresentada como observação derivada e não como telemetria numérica bruta do instrumento.
+            A estação de Tomsk publica um espectrograma ELF. Quando disponíveis, as frequências são estimativas computacionais produzidas por um serviço externo. Não são telemetria numérica bruta do instrumento. A imagem e o JSON são consultados separadamente; a disponibilidade de um não comprova a do outro.
           </p>
         </Card>
       )}
@@ -146,7 +149,10 @@ export function CurrentResonance() {
           f2: data?.mode2?.frequency ?? null,
           f3: data?.mode3?.frequency ?? null,
           intensity: data?.relativeIntensity?.value ?? null,
-          timestamp: data?.timestamp ?? null
+          timestamp: data?.estimated_observation_at ?? data?.timestamp ?? null,
+          sourceUpdatedAt: data?.source_updated_at ?? null,
+          historical: data?.is_historical,
+          availability
         }}
       />
     </div>

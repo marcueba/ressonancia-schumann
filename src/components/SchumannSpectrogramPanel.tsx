@@ -2,15 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Card } from './ui/Card';
 import { AlertCircle, ImageOff, ExternalLink } from 'lucide-react';
 import { formatObservationTime } from '../utils/observationTime';
+import { displayFrequency } from '../utils/schumannState';
+import { getSchumannAvailability } from '../../shared/schumann';
 
 interface SchumannSpectrogramPanelProps {
   currentF1?: number | null;
   currentF2?: number | null;
   currentF3?: number | null;
-  timestamp?: string;
+  timestamp?: string | null;
+  sourceUpdatedAt?: string | null;
+  historical?: boolean;
 }
 
-export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, timestamp }: SchumannSpectrogramPanelProps) {
+export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, timestamp, sourceUpdatedAt, historical }: SchumannSpectrogramPanelProps) {
   const [imgUrl, setImgUrl] = useState<string>('');
   const [hasError, setHasError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -42,6 +46,7 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
   };
 
   const timeStr = formatObservationTime(timestamp, 'America/Sao_Paulo');
+  const hasFrequencies = getSchumannAvailability([currentF1, currentF2, currentF3]) !== 'unavailable';
 
   return (
     <Card className="overflow-hidden border border-border bg-background">
@@ -77,7 +82,7 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
             <div className="flex flex-col items-center justify-center text-text-muted p-8 text-center">
               <ImageOff size={48} className="mb-4 opacity-50" />
               <p className="text-sm font-medium">Espectrograma temporariamente indisponível.</p>
-              <p className="text-xs mt-2 max-w-xs">A conexão com o observatório de Tomsk pode estar instável ou a imagem não pôde ser renderizada.</p>
+              <p className="text-xs mt-2 max-w-xs">Não foi possível carregar a imagem. Os valores numéricos são consultados separadamente.</p>
             </div>
           ) : (
             <img 
@@ -94,19 +99,20 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
         <div className="w-full lg:w-80 p-5 flex flex-col justify-between bg-surface-hover/20">
           <div>
             <h3 className="text-sm font-semibold tracking-wider text-text-main mb-4 uppercase">Frequências Derivadas</h3>
+            <p className="text-xs text-amber-400 mb-3">{!hasFrequencies ? 'Nenhuma frequência válida disponível.' : historical ? 'Leitura histórica fornecida pela fonte.' : 'Valores derivados do JSON externo.'}</p>
             
             <div className="space-y-3 mb-6">
               <div className="bg-surface rounded p-3 border border-border flex justify-between items-center">
                 <span className="text-sm font-medium text-text-muted">F1 (Fundamental)</span>
-                <span className="text-lg font-light text-primary">{currentF1 ? currentF1.toFixed(2) : '--'} Hz</span>
+                <span className="text-lg font-light text-primary">{displayFrequency(currentF1, 2)} Hz</span>
               </div>
               <div className="bg-surface rounded p-3 border border-border flex justify-between items-center">
                 <span className="text-sm font-medium text-text-muted">F2 (Harmônica)</span>
-                <span className="text-lg font-light text-text-main">{currentF2 ? currentF2.toFixed(2) : '--'} Hz</span>
+                <span className="text-lg font-light text-text-main">{displayFrequency(currentF2, 2)} Hz</span>
               </div>
               <div className="bg-surface rounded p-3 border border-border flex justify-between items-center">
                 <span className="text-sm font-medium text-text-muted">F3 (Harmônica)</span>
-                <span className="text-lg font-light text-text-main">{currentF3 ? currentF3.toFixed(2) : '--'} Hz</span>
+                <span className="text-lg font-light text-text-main">{displayFrequency(currentF3, 2)} Hz</span>
               </div>
             </div>
 
@@ -129,7 +135,7 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
 
           <div className="mt-8 pt-4 border-t border-border space-y-2">
             <p className="text-[10px] text-text-muted leading-tight mb-4">
-              * O timestamp da imagem de origem não é fornecido separadamente pela fonte. A data abaixo pertence aos valores numéricos derivados; a correspondência temporal com esta imagem não é conhecida.
+              * O horário da imagem não é informado separadamente pela fonte. A atualização do documento JSON não comprova o horário da imagem nem a existência de uma medição.
             </p>
             <h4 className="text-[10px] uppercase tracking-widest text-text-muted mb-2">Proveniência</h4>
             <div className="text-xs flex justify-between">
@@ -144,10 +150,14 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
               <span className="text-text-muted">Processamento:</span>
               <span className="font-medium text-text-main">Externo</span>
             </div>
-            <div className="text-xs flex flex-col gap-1">
-              <span className="text-text-muted">Última observação numérica derivada disponível:</span>
-              <span className="font-medium text-primary">{timeStr}</span>
-            </div>
+            {hasFrequencies && <div className="text-xs flex flex-col gap-1">
+              <span className="text-text-muted">{timestamp ? 'Horário estimado da leitura derivada:' : 'Horário da medição não informado pela fonte.'}</span>
+              {timestamp && <span className="font-medium text-primary">{timeStr}</span>}
+            </div>}
+            {sourceUpdatedAt && <div className="text-xs flex flex-col gap-1">
+              <span className="text-text-muted">Atualização do documento da fonte:</span>
+              <span className="font-medium text-text-main">{formatObservationTime(sourceUpdatedAt, 'America/Sao_Paulo')}</span>
+            </div>}
           </div>
         </div>
       </div>

@@ -111,10 +111,12 @@ async function startServer() {
   app.get("/api/current", async (req, res) => {
     // We try Tomsk as the primary source
     const result = await tomskProvider.getCurrent();
-    if (result.success && result.data) {
+    // A valid source document can explicitly report no observation.
+    // Keep that state (and document/query times) distinct from transport/parser errors.
+    if (result.data) {
       res.json(result.data);
     } else {
-      res.status(503).json({ error: result.error || 'Serviço indisponível' });
+      res.status(503).json({ available: false, error: result.errorCode || 'provider_error', message: result.error || 'Serviço indisponível' });
     }
   });
 
@@ -184,6 +186,7 @@ async function startServer() {
       res.status(503).json({
         success: false,
         available: false,
+        error: result.errorCode,
         message: result.error || "Dados geomagnéticos temporariamente indisponíveis."
       });
     }
@@ -204,7 +207,9 @@ async function startServer() {
       res.status(503).json({
         success: false,
         available: false,
-        message: result.error || "Dados solares temporariamente indisponíveis."
+        error: result.errorCode,
+        message: result.error || "Dados solares temporariamente indisponíveis.",
+        productErrors: result.data?.productErrors
       });
     }
   });

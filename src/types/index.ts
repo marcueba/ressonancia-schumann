@@ -1,13 +1,21 @@
 export interface SchumannMode {
-  frequency: number;
-  amplitude: number;
-  quality: 'Alta' | 'Média' | 'Baixa';
-  lastUpdate: string;
+  frequency: number | null;
+  amplitude: number | null;
+  quality: string;
+  lastUpdate?: string;
 }
 
 export interface CurrentResonanceData {
   stationId?: string;
-  timestamp?: string;
+  timestamp?: string | null;
+  available?: boolean;
+  availability?: 'available' | 'partial' | 'unavailable';
+  availability_reason?: string;
+  source_updated_at?: string | null;
+  estimated_observation_at?: string | null;
+  source_delay_hours?: number | null;
+  timestamp_basis?: 'source_update_minus_delay' | 'demo' | null;
+  is_historical?: boolean;
   fundamental: SchumannMode;
   mode2: SchumannMode;
   mode3: SchumannMode;
@@ -21,6 +29,7 @@ export interface CurrentResonanceData {
   processing_version?: string;
   is_primary_measurement?: boolean;
   is_demo?: boolean;
+  derived_from_image?: boolean;
   relativeIntensity?: {
     value: number;
     scale: string;
@@ -68,6 +77,7 @@ export interface XRayDataPoint {
   flux: number | null;
   energy: string;
   satellite: number;
+  electronContaminated?: boolean;
 }
 
 export interface CurrentXRay {
@@ -93,6 +103,8 @@ export interface SolarData {
   imfTimestamp?: string | null;
   currentXRay?: CurrentXRay | null;
   xrayHistory?: XRayDataPoint[];
+  solarFluxTimestamp?: string | null;
+  productErrors?: Record<string, string>;
 }
 
 export interface HistoricalDataPoint {

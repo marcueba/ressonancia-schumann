@@ -16,13 +16,54 @@ test('fixed upstream returns a bounded JPEG with declared image content', async 
   assert.deepEqual(await fetchTomskSpectrogram(source(imageResponse)), Buffer.from(jpeg));
 });
 
+test('concurrent requests cannot multiply the decoder memory budget', async () => {
+  const outcomes = await Promise.allSettled([
+    fetchTomskSpectrogram(source(imageResponse)),
+    fetchTomskSpectrogram(source(imageResponse)),
+  ]);
+  assert.equal(outcomes.filter(x => x.status === 'fulfilled').length, 1);
+  const rejected = outcomes.find(x => x.status === 'rejected') as PromiseRejectedResult;
+  assert.equal(rejected.reason.status, 503);
+  assert.equal(rejected.reason.code, 'decoder_busy');
+});
+
+test('a valid JPEG with a wrong MIME remains a controlled rejection until the real source proves that mismatch', async () => {
+  for (const mime of ['text/html', 'application/octet-stream']) {
+    await assert.rejects(fetchTomskSpectrogram(source(() => new Response(jpeg, {
+      headers: { 'Content-Type': mime },
+    }))), { status: 502, code: 'invalid_image' });
+  }
+});
+
 test('HTML, wrong magic bytes and truncated images are rejected', async () => {
   for (const response of [
     new Response('<html>blocked</html>', { headers: { 'Content-Type': 'text/html' } }),
     new Response('<html>blocked</html>', { headers: { 'Content-Type': 'image/jpeg' } }),
     new Response(jpeg.slice(0, 4), { headers: { 'Content-Type': 'image/jpeg' } }),
+    // This six-byte fake passed the previous SOI/EOI-only validation.
+    new Response(new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0xff, 0xd9]), { headers: { 'Content-Type': 'image/jpeg' } }),
   ]) {
     await assert.rejects(fetchTomskSpectrogram(source(() => response)), { status: 502, code: 'invalid_image' });
+  }
+});
+
+test('a truncated JPEG with an appended EOI still must really decode', async () => {
+  const truncated = Buffer.concat([jpeg.slice(0, Math.floor(jpeg.length / 2)), Buffer.from([0xff, 0xd9])]);
+  await assert.rejects(fetchTomskSpectrogram(source(() => new Response(truncated, {
+    headers: { 'Content-Type': 'image/jpeg' },
+  }))), { status: 502, code: 'invalid_image' });
+});
+
+test('dimensions and pixel count are bounded before decoder allocation', async () => {
+  const frameOffset = Buffer.from(jpeg).indexOf(Buffer.from([0xff, 0xc0]));
+  assert.ok(frameOffset > 0, 'fixture must contain a baseline SOF frame');
+  for (const [width, height] of [[8193, 1], [1, 8193], [4096, 4096]]) {
+    const oversized = Buffer.from(jpeg);
+    oversized.writeUInt16BE(height, frameOffset + 5);
+    oversized.writeUInt16BE(width, frameOffset + 7);
+    await assert.rejects(fetchTomskSpectrogram(source(() => new Response(oversized, {
+      headers: { 'Content-Type': 'image/jpeg' },
+    }))), { status: 502, code: 'image_dimensions_exceeded' });
   }
 });
 
@@ -61,6 +102,14 @@ test('total timeout applies before headers and while the body is stalled', async
     headers: { 'Content-Type': 'image/jpeg' },
   })), { timeoutMs: 20, maxBytes: 999 }), { status: 504, code: 'upstream_timeout' });
   assert.equal(cancelled, true);
+});
+
+test('the total deadline also terminates a real decoder worker without blocking the event loop', async () => {
+  const started = performance.now();
+  await assert.rejects(fetchTomskSpectrogram(source(imageResponse), { timeoutMs: 1, maxBytes: 5 * 1024 * 1024 }), {
+    status: 504, code: 'image_validation_timeout',
+  });
+  assert.ok(performance.now() - started < 1000, 'worker should not hold up the deadline');
 });
 
 test('HTTP handler exposes controlled availability error without upstream details', async () => {

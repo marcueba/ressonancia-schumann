@@ -1,12 +1,15 @@
 import { ProviderResponse, NormalizedSchumannData } from '../types';
 import { apiCache } from '../services/cache';
-import { isValidObservationTime } from '../services/observation-time';
+import { normalizeSchumannDocument, SchumannSourceError } from '../services/schumann-contract';
 
 function generateMockSchumann(stationId: string): NormalizedSchumannData {
   const now = new Date().toISOString();
   return {
     stationId,
     timestamp: now,
+    available: true,
+    availability: 'available',
+    timestamp_basis: 'demo',
     fundamental: { frequency: 7.83 + (Math.random() * 0.1 - 0.05), amplitude: null, quality: 'Alta' },
     mode2: { frequency: 14.2 + (Math.random() * 0.2 - 0.1), amplitude: null, quality: 'Alta' },
     mode3: { frequency: 20.5 + (Math.random() * 0.2 - 0.1), amplitude: null, quality: 'Média' },
@@ -46,7 +49,8 @@ export class SchumannProvider {
        return {
         success: false,
         error: `A fonte ${this.sourceName} não possui uma API JSON pública conectada.`,
-        timestamp: new Date().toISOString()
+        errorCode: 'source_not_connected',
+        timestamp: null
       };
     }
 
@@ -54,63 +58,40 @@ export class SchumannProvider {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
-        let response;
+        let json: unknown;
         try {
-          response = await fetch('https://ressonanciaschumannhoje.com/dados/schumann.json', { signal: controller.signal });
+          const response = await fetch('https://ressonanciaschumannhoje.com/dados/schumann.json', { signal: controller.signal });
+          if (!response.ok) {
+            void response.body?.cancel();
+            throw new SchumannSourceError('upstream_http_error', `A fonte JSON retornou HTTP ${response.status}.`);
+          }
+          try { json = await response.json(); }
+          catch (error) {
+            if (controller.signal.aborted) throw error;
+            if (error instanceof SyntaxError) throw new SchumannSourceError('invalid_json', 'A fonte retornou JSON inválido.');
+            throw new SchumannSourceError('upstream_transport_error', 'A transferência do documento JSON falhou.');
+          }
+        } catch (error) {
+          if (controller.signal.aborted) throw new SchumannSourceError('upstream_timeout', 'A consulta à fonte JSON excedeu o tempo limite.');
+          if (error instanceof SchumannSourceError) throw error;
+          throw new SchumannSourceError('upstream_transport_error', 'Falha de transporte ao consultar a fonte JSON.');
         } finally {
           clearTimeout(timeout);
         }
-
-        if (!response.ok) throw new Error('Falha na fonte secundária');
-
-        const json = await response.json();
-        
-        // An observation without a valid source time cannot be replaced by download time.
-        const updatedAt = json.atualizado;
-        if (!isValidObservationTime(updatedAt)) {
-          throw new Error('Timestamp da observação ausente ou inválido');
-        }
-        const f1 = json.fundamental?.pico_hz;
-        const f2 = json.harmonicas?.[0]?.pico_hz;
-        const f3 = json.harmonicas?.[1]?.pico_hz;
-        const f4 = json.harmonicas?.[2]?.pico_hz;
-        const f5 = json.harmonicas?.[3]?.pico_hz;
-
-        const data: NormalizedSchumannData = {
-          stationId: this.stationId,
-          timestamp: updatedAt,
-          fundamental: { frequency: f1 ?? null, amplitude: null, quality: json.fundamental?.estado || 'desconhecido' },
-          mode2: { frequency: f2 ?? null, amplitude: null, quality: json.harmonicas?.[0]?.estado || 'desconhecido' },
-          mode3: { frequency: f3 ?? null, amplitude: null, quality: json.harmonicas?.[1]?.estado || 'desconhecido' },
-          mode4: { frequency: f4 ?? null, amplitude: null, quality: json.harmonicas?.[2]?.estado || 'desconhecido' },
-          mode5: { frequency: f5 ?? null, amplitude: null, quality: json.harmonicas?.[3]?.estado || 'desconhecido' },
-          quality: json.estado || 'ok',
-          source: 'Tomsk / SOS-70',
-          source_type: 'derived_spectrogram',
-          source_url: 'https://sos70.ru/provider.php?file=shm.jpg',
-          processing_method: 'Processamento de Imagem Externo',
-          processing_version: 'Dataset JSON — Ressonância Schumann Hoje',
-          derived_from_image: true,
-          is_primary_measurement: false,
-          is_demo: false,
-          collected_at: new Date().toISOString(),
-          relativeIntensity: json.fundamental?.intensidade ? {
-            value: json.fundamental.intensidade,
-            scale: "0-100",
-            calibrated: false,
-            source: "spectrogram_color_scale"
-          } : undefined
-        };
-
-        const result = { success: true, data, timestamp: updatedAt };
+        const data = normalizeSchumannDocument(json, this.stationId, new Date().toISOString());
+        const result = { success: data.available === true, data, timestamp: data.timestamp,
+          errorCode: data.available ? undefined : data.availability_reason };
         // 5 minutes cache
         apiCache.set(cacheKey, result, 300);
         return result;
-      } catch (error: any) {
+      } catch (error) {
+        const known = error instanceof SchumannSourceError;
+        console.warn(`[Schumann JSON] ${known ? error.code : 'provider_error'}`);
         return {
           success: false,
-          error: 'Não foi possível carregar os dados de Tomsk no momento.',
-          timestamp: new Date().toISOString()
+          errorCode: known ? error.code : 'provider_error',
+          error: known ? error.message : 'Falha local ao processar a fonte Schumann.',
+          timestamp: null
         };
       }
     });

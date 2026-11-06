@@ -130,21 +130,21 @@ export function SchumannTimelineChart({
       {showCoverageStats && data.length > 0 && !loading && !error && (
         <div className={`grid grid-cols-1 sm:grid-cols-2 ${observedInterval ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
           <Card className="p-4 flex flex-col justify-center">
-            <span className="text-xs text-text-muted uppercase tracking-wider mb-1">Observações</span>
+            <span className="text-xs text-text-muted uppercase tracking-wider mb-1">Registros</span>
             <span className="text-xl text-text-main font-medium">{data.length}</span>
           </Card>
           {observedInterval && (
             <Card className="p-4 flex flex-col justify-center">
-              <span className="text-xs text-text-muted uppercase tracking-wider mb-1">Cobertura observacional</span>
+              <span className="text-xs text-text-muted uppercase tracking-wider mb-1">Intervalo dos registros</span>
               <span className="text-xl text-text-main font-medium">{observedInterval}</span>
             </Card>
           )}
           <Card className="p-4 flex flex-col justify-center">
-            <span className="text-xs text-text-muted uppercase tracking-wider mb-1">Primeira observação</span>
+            <span className="text-xs text-text-muted uppercase tracking-wider mb-1">Primeiro registro</span>
             <span className="text-sm text-text-main">{formatDate(data[0].timestamp, true)}</span>
           </Card>
           <Card className="p-4 flex flex-col justify-center">
-            <span className="text-xs text-text-muted uppercase tracking-wider mb-1">Última observação</span>
+            <span className="text-xs text-text-muted uppercase tracking-wider mb-1">Último registro</span>
             <span className="text-sm text-text-main">{formatDate(data[data.length - 1].timestamp, true)}</span>
           </Card>
         </div>
@@ -155,7 +155,7 @@ export function SchumannTimelineChart({
           <CardTitle as="h2">Evolução Observacional ({rangeLabel})</CardTitle>
           {!loading && !error && (
             <span className="text-xs text-text-muted bg-surface-hover px-2 py-1 rounded">
-              {data.length} {data.length === 1 ? 'observação disponível' : 'observações disponíveis'} neste período
+              {data.length} {data.length === 1 ? 'registro' : 'registros'} neste período
             </span>
           )}
         </div>
@@ -165,18 +165,24 @@ export function SchumannTimelineChart({
             <p className="text-text-muted">Carregando dados observacionais...</p>
           </div>
         ) : error ? (
-          <div className="h-[400px] w-full flex items-center justify-center bg-red-900/10">
-            <p className="text-red-400">Erro ao carregar o histórico.</p>
+          <div className="h-[400px] w-full p-6 flex flex-col items-center justify-center text-center bg-red-900/10" role="alert">
+            <p className="text-red-400">Não foi possível consultar o histórico.</p>
+            <p className="text-text-muted mt-2 max-w-lg">A falha de consulta não informa se existem registros neste período. Tente novamente mais tarde.</p>
           </div>
         ) : data.length === 0 ? (
           <div className="h-[400px] w-full p-6 flex flex-col items-center justify-center text-center bg-surface">
-            <h2 className="text-xl font-medium text-text-main mb-2">Nenhuma observação disponível neste período.</h2>
+            <h2 className="text-xl font-medium text-text-main mb-2">Nenhum registro disponível neste período.</h2>
             <p className="text-text-muted max-w-lg">
               O sistema depende da proveniência validada. Lacunas longas significam ausência de registros disponíveis.
             </p>
+            {onRangeChange && (
+              <p className="text-sm text-text-muted mt-3 max-w-lg">
+                Para procurar registros mais antigos, selecione 90 dias ou 1 ano. A disponibilidade em cada período precisa ser consultada.
+              </p>
+            )}
           </div>
         ) : (
-          <div className="h-[400px] w-full p-6 pt-8 relative">
+          <div className="h-[400px] w-full p-6 pt-8 relative" role="img" aria-label={`Gráfico de frequências F1, F2 e F3 com ${data.length} registros históricos. Apenas frequências presentes são desenhadas; lacunas não são interpoladas.`}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 10, right: 20, bottom: 20, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
@@ -195,15 +201,15 @@ export function SchumannTimelineChart({
                 />
                 <RechartsTooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3' }} />
                 <Legend verticalAlign="top" height={36} iconType="circle" />
-                <Line type="monotone" name="F1" dataKey="f1" stroke="none" strokeWidth={0} dot={{r: 4, fill: 'var(--color-violet)', strokeWidth: 0}} activeDot={{r: 6}} connectNulls={false} isAnimationActive={false} />
-                <Line type="monotone" name="F2" dataKey="f2" stroke="none" strokeWidth={0} dot={{r: 4, fill: 'var(--color-cyan)', strokeWidth: 0}} activeDot={{r: 6}} connectNulls={false} isAnimationActive={false} />
-                <Line type="monotone" name="F3" dataKey="f3" stroke="none" strokeWidth={0} dot={{r: 4, fill: 'var(--color-emerald)', strokeWidth: 0}} activeDot={{r: 6}} connectNulls={false} isAnimationActive={false} />
+                <Line type="monotone" name="F1" dataKey="f1" stroke="var(--color-violet, #8b5cf6)" strokeWidth={0} dot={{r: 4, fill: 'var(--color-violet, #8b5cf6)', strokeWidth: 0}} activeDot={{r: 6}} connectNulls={false} isAnimationActive={false} />
+                <Line type="monotone" name="F2" dataKey="f2" stroke="var(--color-cyan, #22d3ee)" strokeWidth={0} dot={{r: 4, fill: 'var(--color-cyan, #22d3ee)', strokeWidth: 0}} activeDot={{r: 6}} connectNulls={false} isAnimationActive={false} />
+                <Line type="monotone" name="F3" dataKey="f3" stroke="var(--color-emerald, #34d399)" strokeWidth={0} dot={{r: 4, fill: 'var(--color-emerald, #34d399)', strokeWidth: 0}} activeDot={{r: 6}} connectNulls={false} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         )}
         <div className="px-6 pb-6 text-xs text-text-muted leading-relaxed">
-          <p>Os pontos representam observações persistidas. Intervalos sem observação não são interpolados.</p>
+          <p>Os pontos representam frequências presentes nos registros persistidos. Campos ausentes e intervalos sem registro não são interpolados.</p>
         </div>
       </Card>
     </div>

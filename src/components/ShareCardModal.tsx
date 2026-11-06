@@ -3,6 +3,7 @@ import { X, Download, Share2, Loader2 } from 'lucide-react';
 import * as htmlToImage from 'html-to-image';
 import { cn } from '../utils/cn';
 import { formatObservationTime, parseObservationTime } from '../utils/observationTime';
+import { getSchumannAvailability, isRelativeIntensity, isSchumannFrequency, type SchumannAvailability } from '../../shared/schumann';
 
 interface ShareCardModalProps {
   isOpen: boolean;
@@ -13,6 +14,9 @@ interface ShareCardModalProps {
     f3: number | null;
     intensity: number | null;
     timestamp: string | null;
+    sourceUpdatedAt?: string | null;
+    availability?: SchumannAvailability;
+    historical?: boolean;
   };
 }
 
@@ -20,7 +24,7 @@ const formats = {
   feed: { width: 1080, height: 1350 },
   story: { width: 1080, height: 1920 },
 };
-const formatValue = (value: number | null) => typeof value === 'number' && Number.isFinite(value) ? value.toFixed(1) : '—';
+const formatFrequency = (value: number | null) => isSchumannFrequency(value) ? value.toFixed(1) : '—';
 
 export function ShareCardModal({ isOpen, onClose, data }: ShareCardModalProps) {
   const [format, setFormat] = useState<'feed' | 'story'>('feed');
@@ -50,11 +54,16 @@ export function ShareCardModal({ isOpen, onClose, data }: ShareCardModalProps) {
   }, [isOpen, size.width, size.height]);
 
   if (!isOpen) return null;
-  const obsDate = parseObservationTime(data.timestamp);
+  const visibleAvailability = getSchumannAvailability([data.f1, data.f2, data.f3]);
+  const availability = data.availability === 'unavailable' || visibleAvailability === 'unavailable'
+    ? 'unavailable' : data.availability === 'partial' ? 'partial' : visibleAvailability;
+  const hasObservation = availability !== 'unavailable';
+  const obsDate = hasObservation ? parseObservationTime(data.timestamp) : null;
   const dateStr = obsDate
     ? obsDate.toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
-    : 'DATA DA OBSERVAÇÃO INDISPONÍVEL';
-  const observationTime = formatObservationTime(data.timestamp, 'UTC');
+    : hasObservation ? 'DATA DA OBSERVAÇÃO INDISPONÍVEL' : 'SEM OBSERVAÇÃO VÁLIDA';
+  const observationTime = hasObservation ? formatObservationTime(data.timestamp, 'UTC') : 'Sem observação numérica disponível';
+  const status = !hasObservation ? 'Schumann indisponível' : data.historical ? 'Leitura histórica da fonte' : availability === 'partial' ? 'Leitura derivada parcial' : 'Última observação disponível';
 
   const handleGenerateImage = async (action: 'download' | 'share') => {
     if (!cardRef.current) return;
@@ -74,7 +83,7 @@ export function ShareCardModal({ isOpen, onClose, data }: ShareCardModalProps) {
           const blob = await (await fetch(dataUrl)).blob();
           const file = new File([blob], fileName, { type: 'image/png' });
           if (navigator.canShare?.({ files: [file] })) {
-            await navigator.share({ files: [file], title: 'Ressonância Schumann', text: 'Última observação disponível — dados derivados de espectrograma' });
+            await navigator.share({ files: [file], title: 'Ressonância Schumann', text: status });
             return;
           }
         } catch (error) { console.error('Error sharing file', error); }
@@ -112,22 +121,24 @@ export function ShareCardModal({ isOpen, onClose, data }: ShareCardModalProps) {
                 {(['f1', 'f2', 'f3'] as const).map(mode => (
                   <div key={mode} style={{ borderTop: '2px solid rgba(234, 179, 8, 0.3)', paddingTop: 20 }}>
                     <div style={{ color: '#eab308', fontSize: 24, fontWeight: 600, letterSpacing: '0.1em', marginBottom: 10 }}>{mode.toUpperCase()}</div>
-                    <div style={{ color: '#f8fafc', fontSize: 72, fontWeight: 300 }}>{formatValue(data[mode])} <span style={{ fontSize: 32, color: '#64748b' }}>Hz</span></div>
+                    <div style={{ color: '#f8fafc', fontSize: 72, fontWeight: 300 }}>{formatFrequency(data[mode])} <span style={{ fontSize: 32, color: '#64748b' }}>Hz</span></div>
                   </div>
                 ))}
               </div>
               <div style={{ borderTop: '2px solid rgba(234, 179, 8, 0.3)', paddingTop: 30, marginBottom: 64 }}>
                 <div style={{ color: '#eab308', fontSize: 24, fontWeight: 600, letterSpacing: '0.1em', marginBottom: 10 }}>INTENSIDADE RELATIVA</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
-                  <div style={{ color: '#f8fafc', fontSize: 90, fontWeight: 300 }}>{formatValue(data.intensity)}</div>
+                  <div style={{ color: '#f8fafc', fontSize: 90, fontWeight: 300 }}>{isRelativeIntensity(data.intensity) ? data.intensity.toFixed(1) : '—'}</div>
                   <div style={{ color: '#64748b', fontSize: 40 }}>/ 100</div>
                 </div>
                 <div style={{ color: '#94a3b8', fontSize: 24, marginTop: 10 }}>Escala relativa • não calibrada em pT</div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 32, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 32 }}>
                 <div style={{ maxWidth: 440 }}>
-                  <div style={{ color: '#94a3b8', fontSize: 20, marginBottom: 8 }}>Última observação disponível</div>
+                  <div style={{ color: '#94a3b8', fontSize: 20, marginBottom: 8 }}>{status}</div>
                   <div style={{ color: '#f8fafc', fontSize: 28, fontWeight: 600 }}>{observationTime}</div>
+                  {hasObservation && data.timestamp && <div style={{ color: '#94a3b8', fontSize: 18, marginTop: 8 }}>Horário estimado da leitura derivada</div>}
+                  {data.sourceUpdatedAt && <div style={{ color: '#94a3b8', fontSize: 18, marginTop: 8 }}>Documento da fonte atualizado em<br />{formatObservationTime(data.sourceUpdatedAt, 'UTC')}</div>}
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ color: '#eab308', fontSize: 24, fontWeight: 600, marginBottom: 8 }}>ressonanciaschumann.com</div>

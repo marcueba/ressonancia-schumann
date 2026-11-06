@@ -1,12 +1,112 @@
 import type { RequestHandler } from 'express';
+import { Worker } from 'node:worker_threads';
+import { createRequire } from 'node:module';
+import path from 'node:path';
 
 const TOMSK_URL = 'https://sos70.ru/provider.php?file=shm.jpg';
 const TIMEOUT_MS = 8000;
 const MAX_BYTES = 5 * 1024 * 1024;
+const MAX_DIMENSION = 8192;
+const MAX_PIXELS = 8_000_000;
+let decoderBusy = false;
 
 class SpectrogramError extends Error {
   constructor(public status: number, public code: string, message: string) {
     super(message);
+  }
+}
+
+function jpegDimensions(image: Buffer): { width: number; height: number } {
+  const invalid = () => new SpectrogramError(502, 'invalid_image', 'A fonte não retornou uma imagem JPEG válida.');
+  if (image.length < 5 || image[0] !== 0xff || image[1] !== 0xd8 ||
+      image[image.length - 2] !== 0xff || image[image.length - 1] !== 0xd9) throw invalid();
+  // Inspect bounded header segments before allocating decoder pixels. The decoder
+  // subsequently verifies the complete image, including the entropy-coded scan.
+  let offset = 2;
+  while (offset < image.length - 2) {
+    if (image[offset++] !== 0xff) throw invalid();
+    while (image[offset] === 0xff) offset++;
+    const marker = image[offset++];
+    if (marker === 0xda || marker === 0xd9 || marker === 0 || offset + 2 > image.length) throw invalid();
+    const length = image.readUInt16BE(offset);
+    if (length < 2 || offset + length > image.length) throw invalid();
+    if ([0xc0, 0xc1, 0xc2].includes(marker)) {
+      if (length < 8) throw invalid();
+      const height = image.readUInt16BE(offset + 3);
+      const width = image.readUInt16BE(offset + 5);
+      const components = image[offset + 7];
+      if (!width || !height || !components || length !== 8 + 3 * components) throw invalid();
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION || width * height > MAX_PIXELS) {
+        throw new SpectrogramError(502, 'image_dimensions_exceeded', 'As dimensões da imagem excederam o limite permitido.');
+      }
+      return { width, height };
+    }
+    offset += length;
+  }
+  throw invalid();
+}
+
+// Only this internal, constant program runs in the worker. No request URL or
+// upstream bytes are ever evaluated as code. Decoding stays off the event loop
+// so a corrupt/expensive image cannot prevent the total deadline from firing.
+const DECODER_PROGRAM = `
+  const { parentPort, workerData } = require('node:worker_threads');
+  try {
+    const jpeg = require(workerData.decoderPath);
+    const decoded = jpeg.decode(Buffer.from(workerData.image), {
+      useTArray: true,
+      formatAsRGBA: false,
+      tolerantDecoding: false,
+      maxResolutionInMP: 8,
+      maxMemoryUsageInMB: 128,
+    });
+    parentPort.postMessage({ width: decoded.width, height: decoded.height, bytes: decoded.data.length });
+  } catch (_) {
+    parentPort.postMessage({ invalid: true });
+  }
+`;
+
+async function decodeJpeg(image: Buffer, signal: AbortSignal): Promise<void> {
+  const expected = jpegDimensions(image);
+  if (decoderBusy) throw new SpectrogramError(503, 'decoder_busy', 'A validação de imagem está ocupada. Tente novamente em instantes.');
+  let worker: Worker;
+  try {
+    // Resolve the external runtime package from the application root, in both
+    // tsx development and the esbuild dist/server.cjs artifact.
+    const decoderPath = createRequire(path.join(process.cwd(), 'package.json')).resolve('jpeg-js');
+    worker = new Worker(DECODER_PROGRAM, {
+      eval: true,
+      workerData: { image, decoderPath },
+      resourceLimits: { maxOldGenerationSizeMb: 64, maxYoungGenerationSizeMb: 16, stackSizeMb: 4 },
+    });
+  } catch (_) {
+    throw new SpectrogramError(500, 'decoder_unavailable', 'Não foi possível validar a imagem localmente.');
+  }
+  decoderBusy = true;
+  try {
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const finish = (error?: Error) => {
+        if (settled) return;
+        settled = true;
+        signal.removeEventListener('abort', aborted);
+        // Terminate after every outcome, including a deadline while decoding.
+        const done = () => error ? reject(error) : resolve();
+        void worker.terminate().then(done, done);
+      };
+      const aborted = () => finish(new SpectrogramError(504, 'image_validation_timeout', 'A validação do espectrograma excedeu o tempo limite.'));
+      worker.once('message', (result) => {
+        const valid = !result.invalid && result.width === expected.width && result.height === expected.height &&
+          result.bytes === expected.width * expected.height * 3;
+        finish(valid ? undefined : new SpectrogramError(502, 'invalid_image', 'A imagem JPEG recebida não pôde ser decodificada.'));
+      });
+      worker.once('error', () => finish(new SpectrogramError(500, 'decoder_unavailable', 'Não foi possível validar a imagem localmente.')));
+      worker.once('exit', () => { if (!settled) finish(new SpectrogramError(502, 'invalid_image', 'A validação da imagem não foi concluída.')); });
+      signal.addEventListener('abort', aborted, { once: true });
+      if (signal.aborted) aborted();
+    });
+  } finally {
+    decoderBusy = false;
   }
 }
 
@@ -16,10 +116,12 @@ export async function fetchTomskSpectrogram(
   limits = { timeoutMs: TIMEOUT_MS, maxBytes: MAX_BYTES },
 ): Promise<Buffer> {
   const controller = new AbortController();
+  let decoding = false;
   let timer: ReturnType<typeof setTimeout>;
   const deadline = new Promise<never>((_, reject) => {
     timer = setTimeout(() => {
-      reject(new SpectrogramError(504, 'upstream_timeout', 'A fonte do espectrograma excedeu o tempo limite.'));
+      reject(new SpectrogramError(504, decoding ? 'image_validation_timeout' : 'upstream_timeout',
+        decoding ? 'A validação do espectrograma excedeu o tempo limite.' : 'A fonte do espectrograma excedeu o tempo limite.'));
       controller.abort();
     }, limits.timeoutMs);
   });
@@ -68,10 +170,8 @@ export async function fetchTomskSpectrogram(
     }
     complete = true;
     const image = Buffer.concat(chunks, size);
-    if (image.length < 5 || image[0] !== 0xff || image[1] !== 0xd8 || image[2] !== 0xff ||
-        image[image.length - 2] !== 0xff || image[image.length - 1] !== 0xd9) {
-      throw new SpectrogramError(502, 'invalid_image', 'A fonte não retornou uma imagem JPEG válida.');
-    }
+    decoding = true;
+    await Promise.race([decodeJpeg(image, controller.signal), deadline]);
     return image;
   } catch (error) {
     if (error instanceof SpectrogramError) throw error;

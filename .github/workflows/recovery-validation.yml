@@ -2,7 +2,7 @@ name: Recovery Linux Validation
 
 on:
   push:
-    branches: [codex/recuperacao-operacional, codex/acabamento-operacional]
+    branches: [codex/recuperacao-operacional, codex/acabamento-operacional, codex/correcao-dados-graficos]
 
 permissions:
   contents: read

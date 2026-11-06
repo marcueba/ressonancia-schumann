@@ -16,7 +16,7 @@ test('source time requires a real, timezone-qualified timestamp no later than co
   }
 });
 
-test('live provider rejects missing/invalid source time instead of manufacturing an observation', async () => {
+test('live provider never promotes document update time to a measurement without a known image delay', async () => {
   const previousMode = process.env.DATA_MODE;
   process.env.DATA_MODE = 'live';
   const { tomskProvider } = await import('../server/providers/SchumannProviders');
@@ -27,13 +27,13 @@ test('live provider rejects missing/invalid source time instead of manufacturing
   apiCache.set = () => {};
   try {
     for (const atualizado of [undefined, '', 'invalid', '2026-02-30T12:00:00Z', '2099-01-01T00:00:00Z', '2026-09-30T11:00:00+00:00']) {
-      globalThis.fetch = async () => new Response(JSON.stringify({ atualizado, fundamental: { pico_hz: 7.9 } }), {
+      globalThis.fetch = async () => new Response(JSON.stringify({ atualizado, fundamental: { pico_hz: 7.9, estado: 'ok' } }), {
         headers: { 'Content-Type': 'application/json' }
       });
       const result = await tomskProvider.getCurrent();
-      assert.equal(result.success, atualizado === '2026-09-30T11:00:00+00:00');
-      if (result.success) assert.equal(result.data?.timestamp, atualizado);
-      else assert.equal(result.data, undefined);
+      assert.equal(result.success, true, 'a frequency may exist while its measurement time is unknown');
+      assert.equal(result.data?.timestamp, null);
+      assert.equal(result.data?.source_updated_at, atualizado === '2026-09-30T11:00:00+00:00' ? atualizado : null);
     }
   } finally {
     globalThis.fetch = originalFetch;
@@ -71,6 +71,17 @@ test('collector revalidates before upsert and preserves source time and deduplic
       mode4: { frequency: null, amplitude: null, quality: 'test' },
       mode5: { frequency: null, amplitude: null, quality: 'test' }, quality: 'test', source: 'isolated test'
     };
+    tomskProvider.getCurrent = async () => ({ success: false, errorCode: 'source_unavailable', timestamp: null,
+      data: { ...data, timestamp: null, available: false, availability: 'unavailable', fundamental: { ...data.fundamental, frequency: null } } });
+    assert.equal(await runCollector(), 'no_valid_observation');
+    assert.equal(writes.length, 0);
+    tomskProvider.getCurrent = async () => ({ success: false, errorCode: 'upstream_transport_error', timestamp: null });
+    assert.equal(await runCollector(), 'error');
+    assert.equal(writes.length, 0);
+    tomskProvider.getCurrent = async () => ({ success: true, timestamp: null,
+      data: { ...data, timestamp: null, estimated_observation_at: '2026-09-30T11:00:00Z', timestamp_basis: 'source_update_minus_delay' } });
+    assert.equal(await runCollector(), 'no_valid_observation');
+    assert.equal(writes.length, 0, 'an estimate never becomes a persisted timestamp/deduplication key');
     for (const timestamp of ['', 'invalid', '2099-01-01T00:00:00Z']) {
       tomskProvider.getCurrent = async () => ({ success: true, timestamp, data: { ...data, timestamp } });
       assert.equal(await runCollector(), 'no_valid_observation');
