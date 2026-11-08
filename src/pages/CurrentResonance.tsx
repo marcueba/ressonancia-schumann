@@ -6,6 +6,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from '../components/ui/C
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Activity, Info } from 'lucide-react';
 import { SchumannSpectrogramPanel } from '../components/SchumannSpectrogramPanel';
+import { BgsSpectrogramPanel } from '../components/BgsSpectrogramPanel';
 import { ShareCardModal } from '../components/ShareCardModal';
 import { Share2 } from 'lucide-react';
 import { SchumannTimes } from '../components/SchumannTimes';
@@ -127,6 +128,8 @@ export function CurrentResonance() {
           />
         </div>
       
+      <BgsSpectrogramPanel />
+
       {data && data.derived_from_image && (
         <Card className="mt-6 bg-surface/50 border-primary/20">
           <CardHeader>

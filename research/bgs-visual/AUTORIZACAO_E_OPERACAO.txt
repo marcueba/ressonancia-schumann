@@ -1,0 +1,42 @@
+PAINEL VISUAL BGS — AUTORIZAÇÃO ESPECÍFICA E OPERAÇÃO
+Registro do pacote local: 06/11/2026
+
+AUTORIZAÇÃO
+Resumo fornecido pelo proprietário da resposta do BGS por e-mail em 06/11/2026: autorizadas a reprodução não comercial dos JPEGs dos espectrogramas e a busca automatizada a partir da página oficial. O proprietário confirmou o caráter não comercial do Observatório.
+Crédito exigido: “British Geological Survey © UKRI [year]”; para o material de 2026: “British Geological Survey © UKRI 2026”.
+A autorização específica dos JPEGs não é a OGL dos dados brutos. Uso comercial exige autorização separada. O registro antigo research/bgs-poc/BGS_INDUCTION_SOURCE.md não deve ser usado como licença dessas imagens.
+Este registro não reproduz a correspondência, assinatura ou dados pessoais. Não usa logotipo, parceria ou endosso do BGS. Nenhum novo e-mail foi enviado neste pacote.
+
+FONTES OFICIAIS VERIFICADAS
+Página de descoberta: https://geomag.bgs.ac.uk/research/inductioncoils.html
+Channel 1 — North pointing: https://geomag.bgs.ac.uk/images/currentSpectrogramCH1.jpg
+Channel 2 — East pointing: https://geomag.bgs.ac.uk/images/currentSpectrogramCH2.jpg
+Os dois links aparecem na seção de espectrogramas diários. A Figure 4 de 23/07/2012 é exemplo histórico e não é utilizada.
+
+DATA E ANO DO MATERIAL
+As duas imagens foram baixadas e abertas para inspeção humana em 06/11/2026. Ambas têm 700×600 pixels e título com 2026-11-05. North: Channel X (North); East: Channel Y (East). O período declarado é somente a data inscrita, 05/11/2026, sem inventar um término às 24:00.
+North SHA-256: 5e3b5ed3462fecc29100622726e999047257bc9b64ba91cb56896c9dd503de47
+East SHA-256: 03616f6cbb55eddc21a640534aab5c0e1485f5cdc9a3755c8e1ece83dd4607aa
+O catálogo de material verificado associa canal + hash ao dia e ao ano legíveis. O crédito de 2026 depende dessa associação; não da data do navegador, do download, de Last-Modified ou da expressão “yesterday” da página. URLs current fixas e JPEGs sem EXIF/comentários não permitem identificar datas futuras com segurança sem OCR (fora do escopo).
+Bytes novos com hash desconhecido não herdam o período/crédito anterior: ficam aguardando verificação. As duas cópias reais inspecionadas acompanham o artefato e podem continuar disponíveis após reinício, identificadas como “Cópia arquivada verificada”, com a data verdadeira. Se nenhuma cópia local válida nem imagem remota verificada estiver disponível, o painel informa indisponibilidade e oferece os links oficiais. Atualizar o catálogo exige nova inspeção visual de cada canal e revisão local. Consulta automática não significa aprovação automática de toda imagem nova. Nenhuma data é inferida automaticamente.
+
+INTEGRIDADE VISUAL
+Os JPEGs são exibidos inteiros, sem recoloração ou recorte, com proporção natural. Ambos mostram o eixo Time UT (hrs), ticks horários de 00:00 a 22:00, frequência e escala de potência. Os rótulos estão completos. Nenhum pixel foi alterado.
+A imagem BGS pertence a Eskdalemuir, uma estação distinta de Tomsk. O painel não estabelece correspondência entre imagem e F1/F2/F3 atuais, nem extrai números dos pixels.
+
+CONSULTA E CACHE
+Política inicial: consulta diária sob demanda, com cache de memória e compartilhamento de requisições simultâneas. A página e os dois destinos são oficiais e fixos; parâmetros do visitante não selecionam URLs externas. Falhas também aguardam a próxima janela diária, sem retry imediato ou polling no navegador.
+Consulta, download validado, período da imagem e próxima tentativa são campos separados. Imagens têm hash próprio, validação JPEG completa, limite de tamanho e prazo. Redirecionamentos externos não são seguidos. URLs locais com hash evitam trocar silenciosamente os bytes sob a metadata apresentada.
+O cache remoto é por processo; um reinício pode iniciar outra consulta, mas não elimina as cópias verificadas incluídas no artefato. Não foram criados serviço pago, tabela, disco persistente ou agendamento novo. O arquivo visual não significa persistência científica de novos parâmetros.
+
+CONTINUIDADE APÓS REINÍCIO
+server/assets/bgs contém os dois JPEGs reais originais e manifest.json, com canal, arquivo, SHA-256, período identificado, ano, crédito e URL de origem. O build verifica os hashes e copia somente esses três arquivos para dist/bgs-archive, também em Linux.
+Ao carregar, o serviço confere manifesto, canal/URL permitidos, período/ano/crédito aprovados, tamanho, SHA-256 e decodificação JPEG completa. Arquivos divergentes são rejeitados. As cópias são fixadas separadamente do cache remoto, com origem archive e fetchedAt nulo: abrir o arquivo local não cria um horário de download.
+O rótulo “Cópia arquivada verificada — 05/11/2026 (data inscrita na imagem)” não afirma atualidade, ontem ou que seja o material mais recente do BGS. Falha da consulta e material novo aguardando verificação são estados separados da disponibilidade do arquivo. A política diária, os prazos e os limites de validação permanecem.
+
+LINKS DA IMAGEM
+“Ampliar esta imagem” abre a URL local com o mesmo canal e hash dos bytes exibidos; ela pode ser carregada diretamente após reinício, sem consulta à origem.
+“Ver imagem na fonte BGS” abre separadamente a URL oficial current, com aviso de que pode mostrar outro período. Falha local de carregamento não comprova que a imagem da fonte continue acessível.
+
+LIMITES DO PACOTE
+Integração visual somente em /atual. Sem OCR, FFT, análise de pixels, arquivos brutos/anuais, novas frequências, ERI ou alterações de banco/coletor/histórico/fontes numéricas. Share Cards não recebem imagens BGS. Trabalho local isolado do pacote Home, sem autorização de publicação nesta etapa.

@@ -11,6 +11,7 @@ import { installStaticPages } from "./server/services/static-pages";
 import { getERIState } from "./server/services/eri";
 import { createHistoryHandler } from "./server/services/history";
 import { serveTomskSpectrogram } from "./server/services/spectrogram";
+import { bgsSpectrogramService } from "./server/services/bgs-spectrogram";
 import { createSitemapHandler } from "./server/services/sitemap";
 
 dotenv.config();
@@ -248,6 +249,30 @@ async function startServer() {
   // History (Simulated for both modes as we don't have DB configured yet)
   app.get("/api/history", createHistoryHandler());
   app.get('/api/spectrogram/tomsk', serveTomskSpectrogram);
+
+  app.get('/api/bgs/spectrograms', async (_req, res) => {
+    try {
+      res.set('Cache-Control', 'no-store').json(await bgsSpectrogramService.getMetadata());
+    } catch {
+      res.status(503).set('Cache-Control', 'no-store').json({ available: false, error: 'bgs_unavailable' });
+    }
+  });
+  app.get('/api/bgs/spectrograms/:channel/:sha256.jpg', async (req, res) => {
+    try {
+      // Validates the bundled archive once; parameters never trigger an upstream fetch.
+      const image = await bgsSpectrogramService.getImage(req.params.channel, req.params.sha256);
+      if (!image) {
+        res.status(404).set('Cache-Control', 'no-store').json({ available: false, error: 'bgs_image_not_cached' });
+        return;
+      }
+      res.type('image/jpeg').set({
+        'Cache-Control': 'public, max-age=86400, immutable',
+        ETag: '"' + req.params.sha256 + '"',
+      }).send(image);
+    } catch {
+      res.status(503).set('Cache-Control', 'no-store').json({ available: false, error: 'bgs_image_unavailable' });
+    }
+  });
 
   app.get("/robots.txt", (req, res) => {
     res.type('text/plain');

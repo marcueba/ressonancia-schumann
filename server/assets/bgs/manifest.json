@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "sourcePageUrl": "https://geomag.bgs.ac.uk/research/inductioncoils.html",
+  "images": [
+    {
+      "channel": "north",
+      "file": "north-channel1.jpg",
+      "sha256": "5e3b5ed3462fecc29100622726e999047257bc9b64ba91cb56896c9dd503de47",
+      "observedPeriod": {
+        "label": "05/11/2026 (data inscrita na imagem)",
+        "date": "2026-11-05",
+        "year": 2026,
+        "basis": "image_verified_by_sha256"
+      },
+      "year": 2026,
+      "credit": "British Geological Survey © UKRI 2026",
+      "originalUrl": "https://geomag.bgs.ac.uk/images/currentSpectrogramCH1.jpg"
+    },
+    {
+      "channel": "east",
+      "file": "east-channel2.jpg",
+      "sha256": "03616f6cbb55eddc21a640534aab5c0e1485f5cdc9a3755c8e1ece83dd4607aa",
+      "observedPeriod": {
+        "label": "05/11/2026 (data inscrita na imagem)",
+        "date": "2026-11-05",
+        "year": 2026,
+        "basis": "image_verified_by_sha256"
+      },
+      "year": 2026,
+      "credit": "British Geological Survey © UKRI 2026",
+      "originalUrl": "https://geomag.bgs.ac.uk/images/currentSpectrogramCH2.jpg"
+    }
+  ]
+}

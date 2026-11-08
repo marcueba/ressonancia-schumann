@@ -9,8 +9,10 @@ const MAX_BYTES = 5 * 1024 * 1024;
 const MAX_DIMENSION = 8192;
 const MAX_PIXELS = 8_000_000;
 let decoderBusy = false;
+const decoderIdleWaiters = new Set<() => void>();
+const MAX_DECODER_WAITERS = 8;
 
-class SpectrogramError extends Error {
+export class SpectrogramError extends Error {
   constructor(public status: number, public code: string, message: string) {
     super(message);
   }
@@ -66,7 +68,7 @@ const DECODER_PROGRAM = `
   }
 `;
 
-async function decodeJpeg(image: Buffer, signal: AbortSignal): Promise<void> {
+export async function decodeJpeg(image: Buffer, signal: AbortSignal): Promise<void> {
   const expected = jpegDimensions(image);
   if (decoderBusy) throw new SpectrogramError(503, 'decoder_busy', 'A validação de imagem está ocupada. Tente novamente em instantes.');
   let worker: Worker;
@@ -107,7 +109,29 @@ async function decodeJpeg(image: Buffer, signal: AbortSignal): Promise<void> {
     });
   } finally {
     decoderBusy = false;
+    for (const notify of [...decoderIdleWaiters]) notify();
   }
+}
+
+/** BGS waits for the shared worker under its existing abort deadline; no refetch or polling. */
+export async function decodeJpegWhenAvailable(image: Buffer, signal: AbortSignal): Promise<void> {
+  const timeout = () => new SpectrogramError(504, 'image_validation_timeout', 'A validação do espectrograma excedeu o tempo limite.');
+  while (decoderBusy) {
+    if (signal.aborted) throw timeout();
+    if (decoderIdleWaiters.size >= MAX_DECODER_WAITERS) {
+      throw new SpectrogramError(503, 'decoder_busy', 'A fila de validação de imagem está ocupada.');
+    }
+    await new Promise<void>((resolve, reject) => {
+      const cleanup = () => { decoderIdleWaiters.delete(ready); signal.removeEventListener('abort', aborted); };
+      const ready = () => { cleanup(); resolve(); };
+      const aborted = () => { cleanup(); reject(timeout()); };
+      decoderIdleWaiters.add(ready);
+      signal.addEventListener('abort', aborted, { once: true });
+      if (signal.aborted) aborted();
+    });
+  }
+  if (signal.aborted) throw timeout();
+  await decodeJpeg(image, signal);
 }
 
 /** Fixed upstream only. Optional arguments are for isolated tests, never request parameters. */
