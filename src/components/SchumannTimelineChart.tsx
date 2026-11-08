@@ -110,14 +110,15 @@ export function SchumannTimelineChart({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       {onRangeChange && (
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+        <div className="flex flex-wrap gap-2 pb-2" role="group" aria-label="Período do histórico">
           {RANGES.map((r) => (
             <button 
               key={r.value}
               onClick={() => onRangeChange(r.value)}
-              className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+              aria-pressed={range === r.value}
+              className={`min-h-10 px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                 range === r.value ? 'bg-primary text-background' : 'bg-surface hover:bg-surface-hover text-text-main border border-border'
               }`}
             >
@@ -151,8 +152,8 @@ export function SchumannTimelineChart({
       )}
 
       <Card className="p-0 overflow-hidden">
-        <div className="p-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <CardTitle as="h2">Evolução Observacional ({rangeLabel})</CardTitle>
+        <div className="min-w-0 p-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <CardTitle as="h2" className="min-w-0 break-words">Evolução Observacional ({rangeLabel})</CardTitle>
           {!loading && !error && (
             <span className="text-xs text-text-muted bg-surface-hover px-2 py-1 rounded">
               {data.length} {data.length === 1 ? 'registro' : 'registros'} neste período
@@ -182,7 +183,7 @@ export function SchumannTimelineChart({
             )}
           </div>
         ) : (
-          <div className="h-[400px] w-full p-6 pt-8 relative" role="img" aria-label={`Gráfico de frequências F1, F2 e F3 com ${data.length} registros históricos. Apenas frequências presentes são desenhadas; lacunas não são interpoladas.`}>
+          <div className="h-[400px] w-full min-w-0 px-3 py-6 pt-8 sm:px-6 relative" role="img" aria-label={`Gráfico de frequências F1, F2 e F3 com ${data.length} registros históricos. Apenas frequências presentes são desenhadas; lacunas não são interpoladas.`}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 10, right: 20, bottom: 20, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />

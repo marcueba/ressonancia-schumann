@@ -4,29 +4,54 @@ import { dataProvider } from '../data/dataProvider';
 import { HistoricalDataPoint } from '../types';
 import { Card, CardTitle } from '../components/ui/Card';
 import { SchumannTimelineChart, Range } from '../components/SchumannTimelineChart';
+import { useLocation, useNavigationType, useSearchParams } from 'react-router-dom';
+import { historyRangeFromSearch, historyRecordsFromNavigation } from '../utils/historyNavigation';
 
 export function HistoryPage() {
   useSEO({ title: "Histórico da Ressonância Schumann | Frequências F1, F2 e F3", description: "Consulte o histórico observacional da Ressonância Schumann. Gráficos de variação temporal para as frequências F1, F2 e F3 nas últimas 24h, 7 dias ou mais.", path: "/historico" });
 
-  const [data, setData] = useState<HistoricalDataPoint[]>([]);
-  const [range, setRange] = useState<Range>('24h');
-  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const [, setSearchParams] = useSearchParams();
+  const range = historyRangeFromSearch(location.search);
+  const [data, setData] = useState<HistoricalDataPoint[]>(() => historyRecordsFromNavigation(location.search, location.state, navigationType) ?? []);
+  const [loading, setLoading] = useState(() => historyRecordsFromNavigation(location.search, location.state, navigationType) === null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    let active = true;
+    const transferred = historyRecordsFromNavigation(location.search, location.state, navigationType);
+    if (transferred) {
+      setData(transferred);
+      setLoading(false);
+      setError(false);
+      return () => { active = false; };
+    }
     setLoading(true);
     setError(false);
     dataProvider.getHistoricalData(range)
       .then(res => {
+        if (!active) return;
         setData(res);
         setLoading(false);
       })
       .catch(err => {
+        if (!active) return;
         console.error(err);
         setError(true);
         setLoading(false);
       });
-  }, [range]);
+    return () => { active = false; };
+  }, [location.key, location.search, location.state, navigationType, range]);
+
+  function selectRange(value: Range) {
+    if (value === range) return;
+    setLoading(true);
+    setSearchParams(previous => {
+      previous.set('range', value);
+      return previous;
+    }, { state: null });
+  }
 
   const calcStats = (key: 'f1' | 'f2' | 'f3') => {
     const valid = data.map(d => d[key]).filter(v => v !== null) as number[];
@@ -72,7 +97,7 @@ export function HistoryPage() {
         loading={loading}
         error={error}
         range={range}
-        onRangeChange={setRange}
+        onRangeChange={selectRange}
         showCoverageStats={true}
       />
 

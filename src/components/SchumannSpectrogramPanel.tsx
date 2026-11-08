@@ -49,10 +49,10 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
   const hasFrequencies = getSchumannAvailability([currentF1, currentF2, currentF3]) !== 'unavailable';
 
   return (
-    <Card className="overflow-hidden border border-border bg-background">
-      <div className="p-4 border-b border-border bg-surface flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <h2 className="text-xl font-medium tracking-wide text-text-main">ESPECTROGRAMA DE REFERÊNCIA</h2>
+    <Card className="min-w-0 overflow-hidden p-0 border border-border bg-background [overflow-wrap:anywhere]">
+      <div className="min-w-0 p-4 border-b border-border bg-surface flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="min-w-0 break-words text-xl font-medium tracking-wide text-text-main">ESPECTROGRAMA DE REFERÊNCIA</h2>
           <p className="text-xs text-text-muted mt-1">
             Visualização espectral utilizada na cadeia de origem das observações derivadas.
           </p>
@@ -61,9 +61,9 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
           href="https://sos70.ru/provider.php?file=shm.jpg" 
           target="_blank" 
           rel="noopener noreferrer"
-          className="text-xs flex items-center gap-1 text-primary hover:text-primary-hover transition-colors whitespace-nowrap"
+          className="min-w-0 max-w-full break-words text-xs flex items-center gap-1 text-primary hover:text-primary-hover transition-colors"
         >
-          <ExternalLink size={12} />
+          <ExternalLink size={12} className="shrink-0" />
           Fonte original
         </a>
       </div>
@@ -96,7 +96,7 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
         </div>
 
         {/* Painel de Contexto */}
-        <div className="w-full lg:w-80 p-5 flex flex-col justify-between bg-surface-hover/20">
+        <div className="min-w-0 w-full lg:w-80 p-5 flex flex-col justify-between bg-surface-hover/20">
           <div>
             <h3 className="text-sm font-semibold tracking-wider text-text-main mb-4 uppercase">Frequências Derivadas</h3>
             <p className="text-xs text-amber-400 mb-3">{!hasFrequencies ? 'Nenhuma frequência válida disponível.' : historical ? 'Leitura histórica fornecida pela fonte.' : 'Valores derivados do JSON externo.'}</p>
@@ -138,17 +138,17 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
               * O horário da imagem não é informado separadamente pela fonte. A atualização do documento JSON não comprova o horário da imagem nem a existência de uma medição.
             </p>
             <h4 className="text-[10px] uppercase tracking-widest text-text-muted mb-2">Proveniência</h4>
-            <div className="text-xs flex justify-between">
+            <div className="min-w-0 text-xs flex flex-col gap-1 sm:flex-row sm:justify-between">
               <span className="text-text-muted">Instrumental:</span>
-              <span className="font-medium text-text-main">Tomsk / SOS-70</span>
+              <span className="min-w-0 break-words font-medium text-text-main">Tomsk / SOS-70</span>
             </div>
-            <div className="text-xs flex justify-between">
+            <div className="min-w-0 text-xs flex flex-col gap-1 sm:flex-row sm:justify-between">
               <span className="text-text-muted">Derivação:</span>
-              <span className="font-medium text-text-main truncate ml-2">JSON — Ressonância Schumann Hoje</span>
+              <span className="min-w-0 break-words font-medium text-text-main sm:ml-2">JSON — Ressonância Schumann Hoje</span>
             </div>
-            <div className="text-xs flex justify-between">
+            <div className="min-w-0 text-xs flex flex-col gap-1 sm:flex-row sm:justify-between">
               <span className="text-text-muted">Processamento:</span>
-              <span className="font-medium text-text-main">Externo</span>
+              <span className="min-w-0 break-words font-medium text-text-main">Externo</span>
             </div>
             {hasFrequencies && <div className="text-xs flex flex-col gap-1">
               <span className="text-text-muted">{timestamp ? 'Horário estimado da leitura derivada:' : 'Horário da medição não informado pela fonte.'}</span>

@@ -6,10 +6,10 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-background text-text-main flex flex-col lg:flex-row">
       <Sidebar />
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
         <DemoBanner />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="min-w-0 max-w-7xl mx-auto">
             <Outlet />
           </div>
           
