@@ -190,12 +190,12 @@ export function Dashboard() {
                     <div>
                       <div className="text-[10px] text-text-muted uppercase mb-1">Vento Solar</div>
                       <div className="text-2xl font-light text-text-main">{solar.solarWindSpeed != null ? `${solar.solarWindSpeed}` : '--'} <span className="text-[10px] text-text-muted">km/s</span></div>
-                      <p className="text-[11px] text-text-muted mt-1">{formatNoaaObservationTime(solar.solarWindTimestamp, 'America/Sao_Paulo')}</p>
+                      <p className="text-[11px] text-text-muted mt-1">{formatNoaaObservationTime(solar.solarWindSpeedTimestamp ?? solar.solarWindTimestamp, 'America/Sao_Paulo')}</p>
                     </div>
                     <div>
                       <div className="text-[10px] text-text-muted uppercase mb-1">IMF (Bz)</div>
                       <div className="text-2xl font-light text-text-main">{solar.bz != null ? `${solar.bz}` : '--'} <span className="text-[10px] text-text-muted">nT</span></div>
-                      <p className="text-[11px] text-text-muted mt-1">{formatNoaaObservationTime(solar.imfTimestamp, 'America/Sao_Paulo')}</p>
+                      <p className="text-[11px] text-text-muted mt-1">{formatNoaaObservationTime(solar.bzTimestamp ?? solar.imfTimestamp, 'America/Sao_Paulo')}</p>
                     </div>
                     <div>
                       <div className="text-[10px] text-text-muted uppercase mb-1">Raios X</div>

@@ -80,6 +80,7 @@ export interface NoaaGoesXray {
 
 export interface SolarData {
   solarFlux: number | null;
+  /** Legacy name: count of regions with reported spots in the identified dated product, not individual spots. */
   sunspots: number | null;
   flares: string | null;
 
@@ -94,6 +95,28 @@ export interface SolarData {
   xrayHistory?: XRayDataPoint[];
   solarFluxTimestamp?: string | null;
   productErrors?: Record<string, string>;
+  /** Per-field times; legacy solarWindTimestamp follows speed and imfTimestamp follows Bz. */
+  solarWindSpeedTimestamp?: string | null;
+  protonDensityTimestamp?: string | null;
+  bzTimestamp?: string | null;
+  btTimestamp?: string | null;
+  /** available means validated, not necessarily recent; no observation time is inferred from a query. */
+  productMetadata?: Partial<Record<'f107' | 'regions' | 'flares' | 'windSpeed' | 'density' | 'bz' | 'bt' | 'xray', {
+    state: 'available' | 'partial' | 'absent' | 'unavailable';
+    sourceUrl: string;
+    observedAt: string | null;
+    observedDate: string | null;
+    timePrecision: 'timestamp' | 'date' | 'unknown';
+    kind?: 'observed_flux' | 'adjusted_flux' | 'spotted_regions' | 'catalogued_xra' | 'measurement';
+    reportingSchedule?: string;
+    timeKind?: 'begin' | 'maximum';
+    issuedAt?: string | null;
+    fallbackUsed?: boolean;
+    primaryError?: string | null;
+    error?: string | null;
+    note?: string;
+  }>>;
+
 }
 
 export interface KpDataPoint {

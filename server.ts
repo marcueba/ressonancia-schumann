@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import * as dotenv from 'dotenv';
-import { tomskProvider, bgsProvider, cumianaProvider, etnaProvider, heartmathProvider } from "./server/providers/SchumannProviders";
+import { tomskProvider } from "./server/providers/SchumannProviders";
 import { noaaProvider } from "./server/providers/NoaaProvider";
 import { installStaticPages } from "./server/services/static-pages";
 import { getERIState } from "./server/services/eri";
@@ -13,6 +13,7 @@ import { createHistoryHandler } from "./server/services/history";
 import { serveTomskSpectrogram } from "./server/services/spectrogram";
 import { bgsSpectrogramService } from "./server/services/bgs-spectrogram";
 import { createSitemapHandler } from "./server/services/sitemap";
+import { createStationService } from "./server/services/stations";
 
 dotenv.config();
 
@@ -95,13 +96,10 @@ async function startServer() {
 
 
 
-  const stationsData = [
-    { id: "tomsk", name: "Tomsk", country: "Rússia", latitude: 56.4977, longitude: 84.9744, dataSource: "SOSRFF", license: "Não especificada pela fonte", apiEndpoint: "http://sosrff.tsu.ru/" },
-    { id: "bgs", name: "BGS Eskdalemuir", country: "Reino Unido", latitude: 55.314, longitude: -3.206, dataSource: "British Geological Survey", license: "OGL", apiEndpoint: "https://geomag.bgs.ac.uk/" },
-    { id: "cumiana", name: "Cumiana", country: "Itália", latitude: 44.9791, longitude: 7.3787, dataSource: "Renato Romero / VLF.it", license: "Desconhecida", apiEndpoint: "" },
-    { id: "etna", name: "ETNA", country: "Itália", latitude: 37.7510, longitude: 14.9934, dataSource: "INGV / ETNA", license: "Não especificada pela fonte", apiEndpoint: "" },
-    { id: "heartmath", name: "HeartMath GCI", country: "EUA (Global)", latitude: 37.1232, longitude: -122.1234, dataSource: "Global Coherence Initiative", license: "Fechada", apiEndpoint: "" }
-  ];
+  const stationService = createStationService({
+    getTomskCurrent: () => tomskProvider.getCurrent(),
+    getBgsMetadata: () => bgsSpectrogramService.getMetadata(),
+  });
 
   // API Config
   app.get("/api/config", (req, res) => {
@@ -121,56 +119,14 @@ async function startServer() {
     }
   });
 
-  app.get("/api/stations", async (req, res) => {
-    const isLive = process.env.DATA_MODE === 'live';
-
-    // Evaluate status for each station
-    const stationsStatus = await Promise.all([
-      tomskProvider.getCurrent(),
-      bgsProvider.getCurrent(),
-      cumianaProvider.getCurrent(),
-      etnaProvider.getCurrent(),
-      heartmathProvider.getCurrent()
-    ]);
-
-    const formatted = stationsData.map((s, index) => {
-      const pResult = stationsStatus[index];
-      let finalStatus = 'online';
-      if (isLive) {
-        if (pResult.success) {
-          finalStatus = 'online';
-        } else if (pResult.error?.includes('pendente') || pResult.error?.includes('indisponível')) {
-          finalStatus = 'indisponível';
-        } else {
-          finalStatus = 'offline';
-        }
-      }
-
-      return {
-        ...s,
-        status: finalStatus,
-        quality: isLive ? (pResult.success ? pResult.data?.quality : 'Desconhecida') : 'Alta',
-        lastUpdate: pResult.timestamp
-      };
-    });
-
-    res.json(formatted);
+  app.get("/api/stations", async (_req, res) => {
+    res.json(await stationService.getStations());
   });
 
   app.get("/api/stations/:id", async (req, res) => {
-    const station = stationsData.find(s => s.id === req.params.id);
-    if (!station) {
-      return res.status(404).json({ error: 'Station not found' });
-    }
-
-    // Evaluate status for this station specifically if we wanted to
-    // For now, return basic info and 'online' status for demo
-    res.json({
-      ...station,
-      status: 'online',
-      quality: 'Alta',
-      lastUpdate: new Date().toISOString()
-    });
+    const station = await stationService.getStationById(req.params.id);
+    if (!station) return res.status(404).json({ error: 'Station not found' });
+    res.json(station);
   });
 
   app.get("/api/geomagnetic", async (req, res) => {
