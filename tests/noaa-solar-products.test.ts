@@ -14,7 +14,8 @@ const baselineProducts = () => ({
   imf: [{ time_tag: time(2), bz_gsm: -3, bt: 5 }],
   xray: [{ time_tag: time(3), flux: 1e-6, energy: '0.1-0.8nm', satellite: 19 }],
 });
-async function solar(products: ReturnType<typeof baselineProducts> | Record<string, unknown>, failures: Record<string, number> = {}) {
+type SourceFailure = number | 'transport' | 'timeout' | 'invalid_json' | 'invalid_schema';
+async function solar(products: ReturnType<typeof baselineProducts> | Record<string, unknown>, failures: Record<string, SourceFailure> = {}) {
   const originalFetch = globalThis.fetch, originalGet = apiCache.get, originalSet = apiCache.set, mode = process.env.DATA_MODE;
   const requests: string[] = [];
   process.env.DATA_MODE = 'live'; apiCache.get = () => null; apiCache.set = () => {};
@@ -23,7 +24,12 @@ async function solar(products: ReturnType<typeof baselineProducts> | Record<stri
     assert.ok(url.startsWith('https://services.swpc.noaa.gov/'));
     const name = url.includes('f107') ? 'f107' : url.includes('solar_regions') ? 'regions' : url.includes('edited_events') ? 'flares' : url.includes('_wind_') ? 'wind' : url.includes('_mag_') ? 'imf' : url.includes('xrays-') ? 'xray' : 'unexpected';
     assert.notEqual(name, 'unexpected', 'No fallback, text parser, forecast or new upstream should run silently');
-    return failures[name] ? new Response(null, { status: failures[name] }) : new Response(JSON.stringify(products[name]));
+    const failure = failures[name];
+    if (failure === 'transport') throw new TypeError('Isolated transport failure');
+    if (failure === 'timeout') return new Promise<Response>(() => {});
+    if (failure === 'invalid_json') return new Response('not JSON');
+    if (failure === 'invalid_schema') return new Response('{}');
+    return typeof failure === 'number' ? new Response(null, { status: failure }) : new Response(JSON.stringify(products[name]));
   }) as typeof fetch;
   try { return { result: await new NoaaProvider().getSolar(), requests }; }
   finally { globalThis.fetch = originalFetch; apiCache.get = originalGet; apiCache.set = originalSet; if (mode === undefined) delete process.env.DATA_MODE; else process.env.DATA_MODE = mode; }
@@ -182,4 +188,52 @@ test('unranked blank/minus alternatives and qualified BEGIN never become an exac
     assert.equal(result.flareClass, null); assert.equal(result.metadata.state, 'unavailable'); assert.equal(result.metadata.observedAt, null);
     assert.match(result.metadata.note!, /qualificador horário/); assert.equal(result.metadata.timeKind, undefined);
   }
+});
+
+
+test('successful flare source without XRA retains legitimate absent state, null error and absence note', async () => {
+  for (const flares of [[], [{ type: 'RSP' }]]) {
+    const { result } = await solar({ ...baselineProducts(), flares });
+    const metadata = result.data?.productMetadata?.flares;
+    assert.equal(result.success, true);
+    assert.equal(result.data?.flares, null);
+    assert.equal(metadata?.state, 'absent');
+    assert.equal(metadata?.error, null);
+    assert.equal(result.data?.productErrors?.flares, undefined);
+    assert.match(metadata?.note ?? '', /Nenhum evento XRA foi retornado pelo produto consultado/);
+  }
+});
+
+function assertFlareSourceFailure(result: Awaited<ReturnType<typeof solar>>['result'], code: string) {
+  const metadata = result.data?.productMetadata?.flares;
+  assert.equal(result.success, true, 'Other valid NOAA products remain usable');
+  assert.equal(result.data?.flares, null);
+  assert.equal(metadata?.state, 'unavailable');
+  assert.equal(metadata?.error, code);
+  assert.equal(result.data?.productErrors?.flares, code);
+  assert.notEqual(metadata?.note, normalizeCataloguedFlares([]).metadata.note);
+  assert.doesNotMatch(metadata?.note ?? '', /Nenhum evento XRA foi retornado|ausência de atividade solar fora desse produto/i);
+  assert.equal(result.data?.currentXRay?.flareClass, 'C1.0');
+}
+
+test('flare HTTP, JSON and schema failures never retain the valid-empty catalogue note', async () => {
+  for (const [failure, code] of [[503, 'http_error:503'], ['invalid_json', 'invalid_json'], ['invalid_schema', 'invalid_schema']] as const) {
+    const { result } = await solar(baselineProducts(), { flares: failure });
+    assertFlareSourceFailure(result, code);
+  }
+});
+
+test('flare transport failure is unavailable rather than a successful empty catalogue', async () => {
+  const { result } = await solar(baselineProducts(), { flares: 'transport' });
+  assertFlareSourceFailure(result, 'transport_error');
+});
+
+test('flare timeout is unavailable and does not retain absence wording', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const pending = solar(baselineProducts(), { flares: 'timeout' });
+  // Let the successful sibling JSON reads settle; only the flare deadline remains.
+  await new Promise<void>(resolve => setImmediate(resolve));
+  t.mock.timers.tick(10_000);
+  const { result } = await pending;
+  assertFlareSourceFailure(result, 'timeout');
 });

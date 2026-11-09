@@ -269,7 +269,11 @@ export class NoaaProvider {
       const productMetadata: NonNullable<SolarData['productMetadata']> = { f107: f107.metadata, regions: regions.metadata, flares: catalog.metadata };
       for (const name of ['f107', 'regions', 'flares'] as const) {
         const item = productMetadata[name]!;
-        if (productErrors[name]) Object.assign(item, { state: 'unavailable', error: productErrors[name] });
+        if (productErrors[name]) {
+          Object.assign(item, { state: 'unavailable', error: productErrors[name] });
+          // A failed source did not establish an empty flare catalogue.
+          if (name === 'flares') delete item.note;
+        }
         else if (item.error) productErrors[name] = item.error;
         if (item.observedAt) times.push(item.observedAt);
       }
