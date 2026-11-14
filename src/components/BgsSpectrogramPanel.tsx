@@ -70,6 +70,12 @@ export function BgsSpectrogramView({ state, selectedChannel, onSelectChannel, im
         <p className="text-sm text-text-muted">Observações diárias, não em tempo real. Os eixos, a escala, as datas e as cores originais são preservados.</p>
       </div>
 
+      <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-xs leading-relaxed text-text-muted">
+        <p className="font-medium text-text-main">Calendário de publicação informado pelo BGS</p>
+        <p className="mt-1">Em condições normais, os dados de um dia são recolhidos às 10h UTC do dia seguinte e os espectrogramas são publicados por volta de 10h15 UTC (7h15 de Brasília). O serviço é mantido conforme a disponibilidade da equipe; a data efetiva da imagem deve ser conferida abaixo.</p>
+        <p className="mt-2">Histórico de 2025: houve interrupção do equipamento entre 15/05 e 02/10, devido a um problema elétrico. Não há medições instrumentais desse período no depósito informado pelo BGS.</p>
+      </div>
+
       <div role="group" aria-label="Canais do espectrograma BGS" className="flex min-w-0 flex-wrap gap-2">
         {CHANNELS.map(id => (
           <button key={id} type="button" aria-pressed={selectedChannel === id} aria-controls="bgs-channel-content"
