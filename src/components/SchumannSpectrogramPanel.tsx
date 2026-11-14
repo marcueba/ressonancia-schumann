@@ -86,7 +86,7 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
             </div>
           ) : (
             <img 
-              src={imgUrl}
+              src={imgUrl || undefined}
               alt="Espectrograma ELF de referência da estação Tomsk / SOS-70"
               className={`max-w-full h-auto object-contain transition-opacity duration-500 ${loading ? 'opacity-0' : 'opacity-100'}`}
               onError={handleImageError}
