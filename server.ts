@@ -11,7 +11,7 @@ import { installStaticPages } from "./server/services/static-pages";
 import { getERIState } from "./server/services/eri";
 import { createHistoryHandler } from "./server/services/history";
 import { serveTomskSpectrogram } from "./server/services/spectrogram";
-import { bgsSpectrogramService } from "./server/services/bgs-spectrogram";
+import { createBgsSpectrogramService } from "./server/services/bgs-spectrogram";
 import { createSitemapHandler } from "./server/services/sitemap";
 import { createStationService } from "./server/services/stations";
 
@@ -21,9 +21,7 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-  app.use(express.json());
-
-
+  // The public API is read-only and has no request body consumers.
   app.set('trust proxy', 1);
 
   app.disable('x-powered-by');
@@ -96,6 +94,7 @@ async function startServer() {
 
 
 
+  const bgsSpectrogramService = createBgsSpectrogramService({ checkOrigin: false });
   const stationService = createStationService({
     getTomskCurrent: () => tomskProvider.getCurrent(),
     getBgsMetadata: () => bgsSpectrogramService.getMetadata(),

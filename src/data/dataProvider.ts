@@ -6,6 +6,7 @@ import type {
   GeomagneticData, 
   SolarData 
 } from '../types';
+import { pendingRead } from './pendingRead';
 
 // The data provider abstracts the API calls.
 // It will attempt to fetch from our Express endpoints.
@@ -19,21 +20,27 @@ async function fetchApi(url: string): Promise<Response> {
 
 export const dataProvider = {
   async getConfig(): Promise<{ mode: string }> {
-    const res = await fetchApi('/api/config');
-    if (!res.ok) return { mode: 'demo' };
-    return res.json();
+    return pendingRead('/api/config', async () => {
+      const res = await fetchApi('/api/config');
+      if (!res.ok) throw new Error('Failed to fetch data mode');
+      return res.json();
+    });
   },
 
   async getCurrentData(): Promise<CurrentResonanceData | null> {
-    const res = await fetchApi('/api/current');
-    if (!res.ok) return null;
-    return res.json();
+    return pendingRead('/api/current', async () => {
+      const res = await fetchApi('/api/current');
+      if (!res.ok) return null;
+      return res.json();
+    });
   },
 
   async getHistoricalData(range: string = '24h'): Promise<HistoricalDataPoint[]> {
-    const res = await fetchApi(`/api/history?range=${range}`);
-    if (!res.ok) throw new Error('Failed to fetch historical data');
-    return res.json();
+    return pendingRead(`/api/history?range=${range}`, async () => {
+      const res = await fetchApi(`/api/history?range=${range}`);
+      if (!res.ok) throw new Error('Failed to fetch historical data');
+      return res.json();
+    });
   },
 
   async getStations(): Promise<Station[]> {
@@ -49,15 +56,19 @@ export const dataProvider = {
   },
 
   async getGeomagneticData(): Promise<GeomagneticData | null> {
-    const res = await fetchApi('/api/geomagnetic');
-    if (!res.ok) return null;
-    return res.json();
+    return pendingRead('/api/geomagnetic', async () => {
+      const res = await fetchApi('/api/geomagnetic');
+      if (!res.ok) return null;
+      return res.json();
+    });
   },
 
   async getSolarData(): Promise<SolarData | null> {
-    const res = await fetchApi('/api/solar');
-    if (!res.ok) return null;
-    return res.json();
+    return pendingRead('/api/solar', async () => {
+      const res = await fetchApi('/api/solar');
+      if (!res.ok) return null;
+      return res.json();
+    });
   },
 
   async getERI(): Promise<EarthResonanceIndex> {

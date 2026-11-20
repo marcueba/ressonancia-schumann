@@ -11,6 +11,23 @@ const ROUTES = ['/', '/atual', '/historico', '/estacoes', '/indice', '/geomagnet
   '/artigos/batimento-cardiaco-da-terra', '/404'];
 const PORT = process.env.PRERENDER_PORT || 8999;
 const projectRoot = path.join(__dirname, '..');
+const STATIC_APIS = ['/api/config', '/api/eri'];
+
+async function deferLiveReads(page) {
+  // Run in the build browser before the application. Keep live data pending so
+  // the snapshot captures the initial view without fixtures or build-only errors.
+  // The injected function isn't serialized into the generated document.
+  await page.evaluateOnNewDocument(staticApis => {
+    const fetchFromPage = window.fetch.bind(window);
+    window.fetch = (input, init) => {
+      const url = new URL(input instanceof Request ? input.url : input, document.baseURI);
+      if (url.origin === window.location.origin && url.pathname.startsWith('/api/') && !staticApis.includes(url.pathname)) {
+        return new Promise(() => {});
+      }
+      return fetchFromPage(input, init);
+    };
+  }, STATIC_APIS);
+}
 
 async function getBrowserConfig() {
   const platform = os.platform();
@@ -133,20 +150,29 @@ async function startServer() {
     console.log('Starting Puppeteer...');
     browser = await puppeteer.launch(browserConfig);
     const distDir = path.join(__dirname, '../dist');
+    const origin = `http://localhost:${PORT}`;
 
     for (const route of ROUTES) {
       console.log(`Prerendering ${route}...`);
       const page = await browser.newPage();
       const pageErrors = [];
+      const unexpectedReads = new Set();
       page.on('pageerror', error => pageErrors.push(String(error)));
       try {
+        await deferLiveReads(page);
+        page.on('request', request => {
+          const target = new URL(request.url());
+          if (target.origin === origin && target.pathname.startsWith('/api/') && !STATIC_APIS.includes(target.pathname)) {
+            unexpectedReads.add(target.pathname);
+          }
+        });
         page.on('console', msg => {
           if (msg.type() === 'error' && !msg.text().includes('favicon.ico')) {
             console.log(`[Prerender Browser Warning ${route}]:`, msg.text());
           }
         });
 
-        const url = `http://localhost:${PORT}${route}`;
+        const url = `${origin}${route}`;
         const response = await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
       
         if (!response.ok()) {
@@ -161,8 +187,14 @@ async function startServer() {
         if (pageErrors.length) throw new Error(`JavaScript errors on ${route}: ${pageErrors.join('; ')}`);
 
         const html = await page.evaluate(() => {
+          const main = document.querySelector('main');
+          const alert = main?.querySelector('[role="alert"]');
+          if (alert || main?.textContent.includes('Não foi possível atualizar os dados neste momento.')) {
+            throw new Error('The initial snapshot contains a transient error state.');
+          }
           return '<!doctype html>\n' + document.documentElement.outerHTML;
         });
+        if (unexpectedReads.size) throw new Error(`Unexpected live reads: ${[...unexpectedReads].join(', ')}`);
 
         let fileName = route === '/' ? 'index.html' : `${route.substring(1)}.html`;
         const filePath = path.join(distDir, fileName);
@@ -173,7 +205,7 @@ async function startServer() {
         console.log(`✅ Saved ${fileName} (${(html.length / 1024).toFixed(2)} KB)`);
       } catch (error) {
         console.error('Prerender diagnostic:', JSON.stringify({
-          route, url: page.url(), pageErrors,
+          route, url: page.url(), pageErrors, unexpectedReads: [...unexpectedReads],
           head: await page.evaluate(() => ({
             title: document.title,
             canonical: document.querySelector('link[rel="canonical"]')?.href,

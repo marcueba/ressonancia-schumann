@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { fetchTomskSpectrogram, serveTomskSpectrogram } from '../server/services/spectrogram';
+import { decodeJpegWhenAvailable, fetchTomskSpectrogram, serveTomskSpectrogram } from '../server/services/spectrogram';
 
 // A real, existing JPEG; never used as fallback for the external source.
 const jpeg = new Uint8Array(readFileSync(new URL('../public/og-image.jpg', import.meta.url)));
@@ -16,19 +16,26 @@ test('fixed upstream returns a bounded JPEG with declared image content', async 
   assert.deepEqual(await fetchTomskSpectrogram(source(imageResponse)), Buffer.from(jpeg));
 });
 
-test('concurrent requests cannot multiply the decoder memory budget', async () => {
+test('concurrent pipelines wait for the shared decoder and preserve each validated image', async () => {
   const outcomes = await Promise.allSettled([
     fetchTomskSpectrogram(source(imageResponse)),
     fetchTomskSpectrogram(source(imageResponse)),
   ]);
-  assert.equal(outcomes.filter(x => x.status === 'fulfilled').length, 1);
-  const rejected = outcomes.find(x => x.status === 'rejected') as PromiseRejectedResult;
-  assert.equal(rejected.reason.status, 503);
-  assert.equal(rejected.reason.code, 'decoder_busy');
+  assert.equal(outcomes.filter(x => x.status === 'fulfilled').length, 2);
+  for (const outcome of outcomes) {
+    assert.equal(outcome.status, 'fulfilled');
+    if (outcome.status === 'fulfilled') assert.deepEqual(outcome.value, Buffer.from(jpeg));
+  }
 });
 
-test('a valid JPEG with a wrong MIME remains a controlled rejection until the real source proves that mismatch', async () => {
-  for (const mime of ['text/html', 'application/octet-stream']) {
+test('the fixed source known text/html header mismatch still requires a fully decoded JPEG', async () => {
+  assert.deepEqual(await fetchTomskSpectrogram(source(() => new Response(jpeg, {
+    headers: { 'Content-Type': 'text/html; charset=UTF-8' },
+  }))), Buffer.from(jpeg));
+});
+
+test('unobserved MIME mismatches remain controlled rejections even for valid JPEG bytes', async () => {
+  for (const mime of ['application/octet-stream', 'text/plain', 'image/png', 'application/xhtml+xml']) {
     await assert.rejects(fetchTomskSpectrogram(source(() => new Response(jpeg, {
       headers: { 'Content-Type': mime },
     }))), { status: 502, code: 'invalid_image' });
@@ -42,6 +49,7 @@ test('HTML, wrong magic bytes and truncated images are rejected', async () => {
     new Response(jpeg.slice(0, 4), { headers: { 'Content-Type': 'image/jpeg' } }),
     // This six-byte fake passed the previous SOI/EOI-only validation.
     new Response(new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0xff, 0xd9]), { headers: { 'Content-Type': 'image/jpeg' } }),
+    new Response(new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0xff, 0xd9]), { headers: { 'Content-Type': 'text/html; charset=UTF-8' } }),
   ]) {
     await assert.rejects(fetchTomskSpectrogram(source(() => response)), { status: 502, code: 'invalid_image' });
   }
@@ -49,9 +57,11 @@ test('HTML, wrong magic bytes and truncated images are rejected', async () => {
 
 test('a truncated JPEG with an appended EOI still must really decode', async () => {
   const truncated = Buffer.concat([jpeg.slice(0, Math.floor(jpeg.length / 2)), Buffer.from([0xff, 0xd9])]);
-  await assert.rejects(fetchTomskSpectrogram(source(() => new Response(truncated, {
-    headers: { 'Content-Type': 'image/jpeg' },
-  }))), { status: 502, code: 'invalid_image' });
+  for (const mime of ['image/jpeg', 'text/html; charset=UTF-8']) {
+    await assert.rejects(fetchTomskSpectrogram(source(() => new Response(truncated, {
+      headers: { 'Content-Type': mime },
+    }))), { status: 502, code: 'invalid_image' });
+  }
 });
 
 test('dimensions and pixel count are bounded before decoder allocation', async () => {
@@ -106,10 +116,16 @@ test('total timeout applies before headers and while the body is stalled', async
 
 test('the total deadline also terminates a real decoder worker without blocking the event loop', async () => {
   const started = performance.now();
-  await assert.rejects(fetchTomskSpectrogram(source(imageResponse), { timeoutMs: 1, maxBytes: 5 * 1024 * 1024 }), {
-    status: 504, code: 'image_validation_timeout',
-  });
-  assert.ok(performance.now() - started < 1000, 'worker should not hold up the deadline');
+  try {
+    await assert.rejects(fetchTomskSpectrogram(source(imageResponse), { timeoutMs: 1, maxBytes: 5 * 1024 * 1024 }), {
+      status: 504, code: 'image_validation_timeout',
+    });
+    assert.ok(performance.now() - started < 1000, 'worker should not hold up the deadline');
+  } finally {
+    // The request deadline deliberately wins before asynchronous worker teardown.
+    // Drain through the bounded decoder queue so the next test starts idle.
+    await decodeJpegWhenAvailable(Buffer.from(jpeg), AbortSignal.timeout(5000));
+  }
 });
 
 test('HTTP handler exposes controlled availability error without upstream details', async () => {
@@ -127,6 +143,30 @@ test('HTTP handler exposes controlled availability error without upstream detail
     assert.equal(response.body.available, false);
     assert.equal(response.body.error, 'upstream_unavailable');
     assert.ok(!JSON.stringify(response.body).includes('private'));
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('HTTP handler serves a validated mislabeled JPEG as image/jpeg with nosniff', async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = source(() => new Response(jpeg, { headers: { 'Content-Type': 'text/html; charset=UTF-8' } }));
+  const response: any = {
+    statusCode: 200,
+    headers: {} as Record<string, string>,
+    status(code: number) { this.statusCode = code; return this; },
+    type(value: string) { this.contentType = value; return this; },
+    set(name: string, value: string) { this.headers[name.toLowerCase()] = value; return this; },
+    send(body: Buffer) { this.body = body; return this; },
+    json(body: unknown) { this.body = body; return this; },
+  };
+  try {
+    await serveTomskSpectrogram({} as any, response, () => {});
+    assert.equal(response.statusCode, 200, JSON.stringify(response.body));
+    assert.equal(response.contentType, 'image/jpeg');
+    assert.equal(response.headers['x-content-type-options'], 'nosniff');
+    assert.equal(response.headers['cache-control'], 'public, max-age=300');
+    assert.deepEqual(response.body, Buffer.from(jpeg));
   } finally {
     globalThis.fetch = original;
   }

@@ -13,12 +13,22 @@ type VerifiedImages = Partial<Record<BgsChannel, Record<string, BgsObservedPerio
 // Periods were read from these exact official JPEGs, not inferred from the URL,
 // page caption, HTTP Last-Modified, browser clock or pixel processing.
 const VERIFIED_IMAGES: VerifiedImages = {
-  north: { '5e3b5ed3462fecc29100622726e999047257bc9b64ba91cb56896c9dd503de47': {
-    label: '05/11/2026 (data inscrita na imagem)', date: '2026-11-05', year: 2026, basis: 'image_verified_by_sha256',
-  } },
-  east: { '03616f6cbb55eddc21a640534aab5c0e1485f5cdc9a3755c8e1ece83dd4607aa': {
-    label: '05/11/2026 (data inscrita na imagem)', date: '2026-11-05', year: 2026, basis: 'image_verified_by_sha256',
-  } },
+  north: {
+    '5e3b5ed3462fecc29100622726e999047257bc9b64ba91cb56896c9dd503de47': {
+      label: '05/11/2026 (data inscrita na imagem)', date: '2026-11-05', year: 2026, basis: 'image_verified_by_sha256',
+    },
+    'a196b588f08ce71a314f89050c0c2df1ceddcf4cc99de2a48babd1fbe0e766f6': {
+      label: '14/11/2026 (data inscrita na imagem)', date: '2026-11-14', year: 2026, basis: 'image_verified_by_sha256',
+    },
+  },
+  east: {
+    '03616f6cbb55eddc21a640534aab5c0e1485f5cdc9a3755c8e1ece83dd4607aa': {
+      label: '05/11/2026 (data inscrita na imagem)', date: '2026-11-05', year: 2026, basis: 'image_verified_by_sha256',
+    },
+    '0982eca5554ca49d2aef3a8bc19352c22dc74690e1be880462b2661253d01ebd': {
+      label: '14/11/2026 (data inscrita na imagem)', date: '2026-11-14', year: 2026, basis: 'image_verified_by_sha256',
+    },
+  },
 };
 
 class BgsError extends Error { constructor(public code: string) { super(code); } }
@@ -137,6 +147,7 @@ async function boundedResource(url: string, kind: 'html' | 'jpeg', fetchSource: 
 interface CachedImage { bytes: Buffer; sha256: string; fetchedAt: string | null; period: BgsObservedPeriod; origin: 'archive' | 'remote' }
 export interface BgsSpectrogramServiceOptions {
   fetchSource?: typeof fetch;
+  checkOrigin?: boolean;
   now?: () => number;
   verifiedImages?: VerifiedImages;
   archiveDir?: string | null; // Internal test dependency, never a request parameter.
@@ -226,7 +237,7 @@ export function createBgsSpectrogramService(options: BgsSpectrogramServiceOption
     async getMetadata(): Promise<BgsSpectrogramsMetadata> {
       await initializeArchive();
       let refreshed = false;
-      if (now() >= nextCheckAt) {
+      if (options.checkOrigin !== false && now() >= nextCheckAt) {
         if (!pending) pending = refresh().finally(() => { pending = null; });
         await pending;
         refreshed = true;
@@ -237,7 +248,9 @@ export function createBgsSpectrogramService(options: BgsSpectrogramServiceOption
           channel, available: Boolean(image),
           imageUrl: image ? `/api/bgs/spectrograms/${channel}/${image.sha256}.jpg` : null,
           originalUrl: BGS_ORIGINAL_URLS[channel], sha256: image?.sha256 ?? null,
-          imageOrigin: image?.origin ?? null, fetchedAt: image?.fetchedAt ?? null, checkedAt: new Date(checkedAt).toISOString(), nextCheckAt: new Date(nextCheckAt).toISOString(),
+          imageOrigin: image?.origin ?? null, fetchedAt: image?.fetchedAt ?? null,
+          checkedAt: options.checkOrigin === false ? null : new Date(checkedAt).toISOString(),
+          nextCheckAt: options.checkOrigin === false ? null : new Date(nextCheckAt).toISOString(),
           cacheState: !image ? 'unavailable' as const : errors[channel] ? 'stale' as const : refreshed ? 'fresh' as const : 'cached' as const,
           observedPeriod: image?.period ?? null, credit: image ? `British Geological Survey © UKRI ${image.period.year}` : null,
           error: errors[channel],

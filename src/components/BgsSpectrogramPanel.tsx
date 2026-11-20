@@ -35,15 +35,16 @@ export async function fetchBgsSpectrograms(fetcher: typeof fetch = fetch): Promi
 }
 
 /** Only the verified local, content-addressed image can be embedded. */
-function verifiedImage(channel: BgsChannel, metadata: BgsChannelMetadata): boolean {
-  return metadata.available && (metadata.imageOrigin === 'archive' || metadata.imageOrigin === 'remote') &&
+export function isVerifiedBgsImage(channel: BgsChannel, metadata: BgsChannelMetadata): boolean {
+  const period = metadata.observedPeriod;
+  const validOrigin = (metadata.imageOrigin === 'archive' || metadata.imageOrigin === 'remote') &&
+    period?.basis === 'image_verified_by_sha256';
+  return metadata.channel === channel && metadata.available && validOrigin &&
     /^[a-f0-9]{64}$/.test(metadata.sha256 ?? '') &&
     metadata.imageUrl === `/api/bgs/spectrograms/${channel}/${metadata.sha256}.jpg` &&
     metadata.originalUrl === BGS_ORIGINAL_URLS[channel] &&
-    metadata.observedPeriod?.basis === 'image_verified_by_sha256' &&
-    typeof metadata.observedPeriod.label === 'string' && metadata.observedPeriod.label.trim().length > 0 &&
-    Number.isInteger(metadata.observedPeriod.year) &&
-    metadata.credit === `British Geological Survey © UKRI ${metadata.observedPeriod.year}`;
+    typeof period?.label === 'string' && period.label.trim().length > 0 &&
+    Number.isInteger(period.year) && metadata.credit === `British Geological Survey © UKRI ${period.year}`;
 }
 
 interface BgsSpectrogramViewProps {
@@ -58,7 +59,7 @@ interface BgsSpectrogramViewProps {
 /** Presentation boundary used by SSR checks; it performs no network requests. */
 export function BgsSpectrogramView({ state, selectedChannel, onSelectChannel, imageState = 'loading', onImageLoad, onImageError }: BgsSpectrogramViewProps) {
   const channel = state.status === 'ready' ? state.metadata.channels[selectedChannel] : null;
-  const hasImage = !!channel && verifiedImage(selectedChannel, channel);
+  const hasImage = !!channel && isVerifiedBgsImage(selectedChannel, channel);
   const unverified = channel?.error === 'material_unverified';
   const archived = channel?.imageOrigin === 'archive';
 
@@ -68,6 +69,12 @@ export function BgsSpectrogramView({ state, selectedChannel, onSelectChannel, im
         <h2 className="text-xl font-medium text-text-main">Espectrogramas ELF — Eskdalemuir / BGS</h2>
         <p className="text-sm text-text-muted">Estação independente: Eskdalemuir, Reino Unido. Estas imagens não correspondem à estação Tomsk nem alimentam os valores numéricos Schumann deste site.</p>
         <p className="text-sm text-text-muted">Observações diárias, não em tempo real. Os eixos, a escala, as datas e as cores originais são preservados.</p>
+      </div>
+
+      <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-xs leading-relaxed text-text-muted">
+        <p className="font-medium text-text-main">Calendário de publicação informado pelo BGS</p>
+        <p className="mt-1">Em condições normais, os dados de um dia são recolhidos às 10h UTC do dia seguinte e os espectrogramas são publicados por volta de 10h15 UTC (7h15 de Brasília). O serviço é mantido conforme a disponibilidade da equipe; a data efetiva da imagem deve ser conferida abaixo.</p>
+        <p className="mt-2">Histórico de 2025: houve interrupção do equipamento entre 15/05 e 02/10, devido a um problema elétrico. Não há medições instrumentais desse período no depósito informado pelo BGS.</p>
       </div>
 
       <div role="group" aria-label="Canais do espectrograma BGS" className="flex min-w-0 flex-wrap gap-2">
@@ -90,7 +97,7 @@ export function BgsSpectrogramView({ state, selectedChannel, onSelectChannel, im
           {hasImage && <>
             {archived
               ? <p className="text-sm font-medium text-text-main" data-bgs-image-origin="archive">Cópia arquivada verificada — {channel.observedPeriod!.label}</p>
-              : <p className="text-xs text-text-muted" data-bgs-image-origin="remote">Imagem verificada em cache. A consulta segue a política diária do projeto.</p>}
+              : <p className="text-xs text-text-muted" data-bgs-image-origin={channel.imageOrigin}>Imagem verificada em cache.</p>}
             {channel.error && <p role="status" className="text-sm text-amber-400">{unverified
               ? 'Novo material da fonte BGS aguarda verificação do período e do ano.'
               : 'A consulta à fonte BGS não forneceu uma atualização válida.'} {archived
@@ -106,11 +113,13 @@ export function BgsSpectrogramView({ state, selectedChannel, onSelectChannel, im
             <p className="text-sm text-text-muted">{channel.credit}</p>
             {channel.observedPeriod!.note && <p className="text-xs text-amber-400">{channel.observedPeriod!.note}</p>}
           </>}
-          <dl className="min-w-0 space-y-2 text-xs text-text-muted">
-            <div><dt className="font-medium">Última consulta à fonte</dt><dd>{formatObservationTime(channel.checkedAt, 'UTC')}</dd></div>
-            {!archived && channel.fetchedAt && <div><dt className="font-medium">Última imagem válida obtida em</dt><dd>{formatObservationTime(channel.fetchedAt, 'UTC')}</dd></div>}
-          </dl>
-          <p className="text-xs text-text-muted">O horário da consulta ou do download não é o horário da observação.</p>
+          {channel.checkedAt ? <>
+            <dl className="min-w-0 space-y-2 text-xs text-text-muted">
+              <div><dt className="font-medium">Última consulta à fonte</dt><dd>{formatObservationTime(channel.checkedAt, 'UTC')}</dd></div>
+              {!archived && channel.fetchedAt && <div><dt className="font-medium">Última imagem válida obtida em</dt><dd>{formatObservationTime(channel.fetchedAt, 'UTC')}</dd></div>}
+            </dl>
+            <p className="text-xs text-text-muted">O horário da consulta ou do download não é o horário da observação.</p>
+          </> : <p className="text-xs text-text-muted">Novas imagens passam por verificação humana.</p>}
           <div className="flex min-w-0 flex-wrap gap-x-4 gap-y-2 text-sm">
             {hasImage && <a href={channel.imageUrl!} target="_blank" rel="noopener noreferrer" className="inline-block max-w-full text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Ampliar esta imagem</a>}
             <a href={BGS_ORIGINAL_URLS[selectedChannel]} target="_blank" rel="noopener noreferrer" className="inline-block max-w-full text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Ver imagem na fonte BGS</a>
@@ -127,10 +136,9 @@ export function BgsSpectrogramView({ state, selectedChannel, onSelectChannel, im
   );
 }
 
-export function BgsSpectrogramPanel() {
+/** Shared metadata lifecycle for the full panel and the overview thumbnails. */
+export function useBgsSpectrograms() {
   const [state, setState] = useState<BgsPanelState>({ status: 'loading' });
-  const [selectedChannel, setSelectedChannel] = useState<BgsChannel>('north');
-  const [imageStates, setImageStates] = useState<Partial<Record<BgsChannel, BgsImageState>>>({});
   const request = useRef<Promise<BgsSpectrogramsMetadata> | null>(null);
 
   useEffect(() => {
@@ -144,8 +152,21 @@ export function BgsSpectrogramPanel() {
     return () => { active = false; };
   }, []);
 
+  return state;
+}
+
+export function BgsSpectrogramPanel() {
+  const state = useBgsSpectrograms();
+  const [selectedChannel, setSelectedChannel] = useState<BgsChannel>('north');
+  const [imageStates, setImageStates] = useState<Partial<Record<BgsChannel, { url: string; status: BgsImageState }>>>({});
+  const url = state.status === 'ready' ? state.metadata.channels[selectedChannel].imageUrl : null;
+  const imageState = imageStates[selectedChannel];
+  const markImage = (status: BgsImageState) => {
+    if (url) setImageStates(previous => ({ ...previous, [selectedChannel]: { url, status } }));
+  };
+
   return <BgsSpectrogramView state={state} selectedChannel={selectedChannel} onSelectChannel={setSelectedChannel}
-    imageState={imageStates[selectedChannel] ?? 'loading'}
-    onImageLoad={() => setImageStates(previous => ({ ...previous, [selectedChannel]: 'loaded' }))}
-    onImageError={() => setImageStates(previous => ({ ...previous, [selectedChannel]: 'error' }))} />;
+    imageState={imageState && imageState.url === url ? imageState.status : 'loading'}
+    onImageLoad={() => markImage('loaded')}
+    onImageError={() => markImage('error')} />;
 }

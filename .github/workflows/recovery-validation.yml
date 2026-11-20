@@ -2,7 +2,10 @@ name: Recovery Linux Validation
 
 on:
   push:
-    branches: [codex/recuperacao-operacional, codex/acabamento-operacional, codex/correcao-dados-graficos, codex/bgs-espectrogramas, codex/home-historico-mobile, codex/recuperacao-indicadores-estacoes]
+    branches: [codex/recuperacao-operacional, codex/acabamento-operacional, codex/correcao-dados-graficos, codex/bgs-espectrogramas, codex/home-historico-mobile, codex/recuperacao-indicadores-estacoes, codex/redesign-observatorio-cientifico]
+
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -17,6 +20,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: 22.17.0
@@ -31,6 +37,22 @@ jobs:
           npm --version
           bun --version
           git rev-parse HEAD
+      - name: Confirm PR tree and credential isolation
+        if: github.event_name == 'pull_request'
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          test "$(git rev-parse HEAD^2)" = "$PR_HEAD_SHA"
+          git show --no-patch --format="PR merge tree: %T" HEAD
+          git show --no-patch --format="PR head tree: %T" "$PR_HEAD_SHA"
+          test -z "${SUPABASE_URL:-}${SUPABASE_ANON_KEY:-}${SUPABASE_SERVICE_ROLE_KEY:-}${VITE_SUPABASE_URL:-}${VITE_SUPABASE_ANON_KEY:-}"
+          test -z "$(find . -maxdepth 1 -name '.env*' ! -name '.env.example' -print -quit)"
+          git diff --no-ext-diff --unified=0 HEAD^1 HEAD > "$RUNNER_TEMP/recovery-pr.diff"
+          if grep -E '^\+.*(-----BEGIN [A-Z ]*PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|sb_secret_[A-Za-z0-9_-]{20,}|eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{20,}|AKIA[A-Z0-9]{16}|AIza[A-Za-z0-9_-]{35})' "$RUNNER_TEMP/recovery-pr.diff" >/dev/null; then
+            echo "Credential pattern detected in the PR diff."
+            exit 1
+          fi
+          echo "Validated PR head $PR_HEAD_SHA without production credentials."
       - name: Clean frozen install
         run: |
           sha256sum package.json bun.lock > /tmp/frozen-before.sha256
@@ -44,6 +66,34 @@ jobs:
         run: npm run build
       - name: Validate generated server and routes
         run: node scripts/validate-artifact.cjs
+      - name: Verify 13 static routes and archived BGS originals
+        if: github.event_name == 'pull_request'
+        run: |
+          node --input-type=commonjs <<'NODE'
+          const assert = require('node:assert/strict');
+          const { createHash } = require('node:crypto');
+          const { readFileSync } = require('node:fs');
+          const routes = ['/', '/atual', '/historico', '/estacoes', '/indice', '/geomagnetica', '/solar', '/metodologia',
+            '/artigos', '/artigos/o-que-e-ressonancia-schumann', '/artigos/ressonancia-schumann-hoje',
+            '/artigos/batimento-cardiaco-da-terra', '/404'];
+          for (const route of routes) {
+            const html = readFileSync(route === '/' ? 'dist/index.html' : 'dist' + route + '.html', 'utf8');
+            if (route === '/404') assert.match(html, /<meta[^>]+name="robots"[^>]+content="[^"]*noindex/, route);
+            else assert.ok(html.includes('href="https://ressonanciaschumann.com' + route + '"'), route);
+            const initialMain = html.match(/<main[\s>][\s\S]*?<\/main>/i)?.[0];
+            assert.ok(initialMain, route);
+            assert.doesNotMatch(initialMain, /role="alert"|dados (?:simulados|ilustrativos)|prerender_data_unavailable|falha ao consultar|não foi possível (?:consultar|atualizar)|espectrograma Tomsk temporariamente indisponível/i, route);
+          }
+          const manifest = readFileSync('server/assets/bgs/manifest.json');
+          assert.deepEqual(readFileSync('dist/bgs-archive/manifest.json'), manifest);
+          for (const { channel, file, sha256, observedPeriod, credit } of JSON.parse(manifest).images) {
+            const original = readFileSync('server/assets/bgs/' + file);
+            assert.deepEqual(readFileSync('dist/bgs-archive/' + file), original);
+            assert.equal(createHash('sha256').update(original).digest('hex'), sha256);
+            console.log(channel, observedPeriod.date, credit, sha256);
+          }
+          console.log('13 static routes validated, with no simulated data markers or transient errors.');
+          NODE
       - name: Upload validation evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -1,4 +1,4 @@
-import type { ProviderResponse, SolarData, XRayDataPoint, CurrentXRay, KpDataPoint } from '../types';
+import type { ProviderResponse, SolarData, SolarTrendPoint, XRayDataPoint, CurrentXRay, KpDataPoint } from '../types';
 import { apiCache } from '../services/cache';
 import { parseObservationTime } from '../../src/utils/observationTime';
 import { flareClass, isPositiveFlux, prepareXRayHistory, XRAY_BAND } from '../../src/utils/xrayData';
@@ -204,14 +204,35 @@ export function normalizeCataloguedFlares(rows: Row[]) {
   return { flareClass: latest.klass, metadata };
 }
 
-/** Preserve each usable field and its own source time; companion absence cannot discard it. */
-export function latestSolarField(rows: Row[], field: 'proton_speed' | 'proton_density' | 'bz_gsm' | 'bt') {
-  const records = rows.flatMap(row => {
+type SolarField = 'proton_speed' | 'proton_density' | 'bz_gsm' | 'bt';
+
+/** RTSW includes concurrent streams. Use the explicitly active stream, not array order.
+ * Older responses without an active field retain their existing contract.
+ * No missing minute is generated, and conflicting duplicates remain unknown.
+ */
+function normalizeSolarField(rows: Row[], field: SolarField): SolarTrendPoint[] {
+  const selected = rows.some(row => 'active' in row) ? rows.filter(row => row.active === true) : rows;
+  const values = new Map<string, number | null>();
+  for (const row of selected) {
     const value = row[field], timestamp = noaaTime(row.time_tag);
     const accepted = finite(value) && (field === 'proton_speed' ? value > 0 : field === 'bz_gsm' || value >= 0);
-    return timestamp && accepted ? [{ value, timestamp }] : [];
-  }).sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
-  return records.at(-1) ?? null;
+    if (!timestamp) continue;
+    const normalized = accepted ? value : null;
+    values.set(timestamp, values.has(timestamp) && values.get(timestamp) !== normalized ? null : normalized);
+  }
+  return [...values].map(([timestamp, value]) => ({ timestamp, value }))
+    .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+}
+
+/** Reported values only; chart code must break lines across unreported minutes. */
+export function normalizeSolarHistory(rows: Row[], field: 'proton_speed' | 'bz_gsm'): SolarTrendPoint[] {
+  return normalizeSolarField(rows, field);
+}
+
+/** Preserve each usable field and its own source time; companion absence cannot discard it. */
+export function latestSolarField(rows: Row[], field: SolarField) {
+  const latest = normalizeSolarField(rows, field).reverse().find(point => point.value !== null);
+  return latest ? { value: latest.value!, timestamp: latest.timestamp } : null;
 }
 
 export class NoaaProvider {
@@ -248,7 +269,7 @@ export class NoaaProvider {
 
   async getSolar(): Promise<ProviderResponse<SolarData>> {
     if (process.env.DATA_MODE !== 'live') return { success: true, data: { solarFlux: 145, sunspots: 78, flares: 'M1.2 (DEMO)', status: 'Ativa (DEMO)', solarWindSpeed: 420.5, protonDensity: 5.2, bz: -2.3, bt: 6.1,
-      currentXRay: { flux: 3.2e-6, energy: XRAY_BAND, satellite: 16, flareClass: 'C3.2', timestamp: new Date().toISOString() }, xrayHistory: [] }, timestamp: new Date().toISOString() };
+      currentXRay: { flux: 3.2e-6, energy: XRAY_BAND, satellite: 16, flareClass: 'C3.2', timestamp: new Date().toISOString() }, xrayHistory: [], solarWindHistory: [], bzHistory: [] }, timestamp: new Date().toISOString() };
     return apiCache.resolve('solar_noaa', async () => {
       const productErrors: Record<string, string> = {};
       const products = Object.fromEntries(await Promise.all(Object.entries(urls).map(async ([name, url]) => {
@@ -306,7 +327,8 @@ export class NoaaProvider {
         solarWindTimestamp: speed?.timestamp ?? null, imfTimestamp: bz?.timestamp ?? null,
         solarWindSpeedTimestamp: speed?.timestamp ?? null, protonDensityTimestamp: density?.timestamp ?? null,
         bzTimestamp: bz?.timestamp ?? null, btTimestamp: bt?.timestamp ?? null,
-        currentXRay, xrayHistory, productErrors, productMetadata };
+        currentXRay, xrayHistory, solarWindHistory: normalizeSolarHistory(products.wind, 'proton_speed'),
+        bzHistory: normalizeSolarHistory(products.imf, 'bz_gsm'), productErrors, productMetadata };
       if (solarFlux === null && regions.count === null && catalog.flareClass === null && productMetadata.flares?.state !== 'absent' && !speed && !density && !bz && !bt && !currentXRay) {
         return { success: false, data: solarData, errorCode: 'noaa_products_unavailable', error: 'Não foi possível obter medições solares válidas da NOAA.', timestamp: null };
       }

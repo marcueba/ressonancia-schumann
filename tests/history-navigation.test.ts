@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import type { HistoricalDataPoint } from '../src/types';
 import type { Range } from '../src/components/SchumannTimelineChart';
 import { LastHistoryPeriodAction } from '../src/components/LastHistoryPeriodAction';
+import { HistoryPage } from '../src/pages/History';
 import { findHistoryPeriod, historyRangeFromSearch, historyRecordsFromNavigation } from '../src/utils/historyNavigation';
 
 const NOW = Date.parse('2026-11-06T12:00:00Z');
@@ -94,12 +95,27 @@ test('fresh matching PUSH state avoids the initial duplicate request; refresh/ba
 
 test('direct query selects only a supported range and malformed navigation state is ignored', async () => {
   for (const value of ['24h', '7d', '30d', '90d', '1y']) assert.equal(historyRangeFromSearch('?range=' + value), value);
-  for (const search of ['', '?range=all', '?range=', '?month=2026-09']) assert.equal(historyRangeFromSearch(search), '24h');
+  for (const search of ['', '?range=all', '?range=', '?month=2026-09']) assert.equal(historyRangeFromSearch(search), '90d');
   const selected = await findHistoryPeriod(cache([row(40 * DAY)]), async () => [], () => NOW);
   assert.equal(historyRecordsFromNavigation('?range=bad', selected, 'PUSH', NOW), null);
   assert.equal(historyRecordsFromNavigation('?range=90d&range=7d', selected, 'PUSH', NOW), null);
   assert.equal(historyRecordsFromNavigation('?range=90d', { historyPeriod: { ...selected!.historyPeriod, records: [row(-DAY)] } }, 'PUSH', NOW), null);
   assert.equal(historyRecordsFromNavigation('?range=90d', { historyPeriod: { ...selected!.historyPeriod, consultedRange: '24h' } }, 'PUSH', NOW), null);
+});
+
+test('direct and invalid History URLs select 90 days; every supported explicit period keeps its button and graph heading aligned', () => {
+  for (const search of ['', '?range=', '?range=bad', '?range=90D', '?range=__proto__', '?month=2026-09',
+    '?range=24h', '?range=7d', '?range=30d', '?range=90d', '?range=1y']) {
+    const range = historyRangeFromSearch(search);
+    const label = { '24h': '24 horas', '7d': '7 dias', '30d': '30 dias', '90d': '90 dias', '1y': '1 ano' }[range];
+    const html = renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: ['/historico' + search] }, createElement(HistoryPage)));
+    assert.ok(html.includes(`Evolução Observacional (${label})`), search);
+    assert.ok(new RegExp(`aria-pressed="true"[^>]*>${label}</button>`).test(html), search);
+    assert.equal((html.match(/aria-pressed="true"/g) ?? []).length, 1);
+    for (const filter of ['24 horas', '7 dias', '30 dias', '90 dias', '1 ano']) assert.ok(html.includes(filter));
+    assert.match(html, /Carregando dados observacionais/);
+    assert.doesNotMatch(html, /Nenhum registro disponível|Ver 90 dias|Resumo Estatístico|0 registros neste período/);
+  }
 });
 
 test('the action has no mount-time lookup and discloses its bounded search', () => {

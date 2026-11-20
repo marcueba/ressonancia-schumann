@@ -5,10 +5,10 @@
     {
       "channel": "north",
       "file": "north-channel1.jpg",
-      "sha256": "5e3b5ed3462fecc29100622726e999047257bc9b64ba91cb56896c9dd503de47",
+      "sha256": "a196b588f08ce71a314f89050c0c2df1ceddcf4cc99de2a48babd1fbe0e766f6",
       "observedPeriod": {
-        "label": "05/11/2026 (data inscrita na imagem)",
-        "date": "2026-11-05",
+        "label": "14/11/2026 (data inscrita na imagem)",
+        "date": "2026-11-14",
         "year": 2026,
         "basis": "image_verified_by_sha256"
       },
@@ -19,10 +19,10 @@
     {
       "channel": "east",
       "file": "east-channel2.jpg",
-      "sha256": "03616f6cbb55eddc21a640534aab5c0e1485f5cdc9a3755c8e1ece83dd4607aa",
+      "sha256": "0982eca5554ca49d2aef3a8bc19352c22dc74690e1be880462b2661253d01ebd",
       "observedPeriod": {
-        "label": "05/11/2026 (data inscrita na imagem)",
-        "date": "2026-11-05",
+        "label": "14/11/2026 (data inscrita na imagem)",
+        "date": "2026-11-14",
         "year": 2026,
         "basis": "image_verified_by_sha256"
       },

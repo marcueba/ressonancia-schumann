@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { HistoricalDataPoint } from '../types';
 import { Card, CardTitle } from './ui/Card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
+import { CompactSchumannTimeline } from './CompactSchumannTimeline';
 
 export type Range = '24h' | '7d' | '30d' | '90d' | '1y';
 
@@ -20,6 +21,7 @@ interface SchumannTimelineChartProps {
   range: Range;
   onRangeChange?: (range: Range) => void;
   showCoverageStats?: boolean;
+  compact?: boolean;
 }
 
 export function SchumannTimelineChart({ 
@@ -28,7 +30,8 @@ export function SchumannTimelineChart({
   error, 
   range, 
   onRangeChange,
-  showCoverageStats = true
+  showCoverageStats = true,
+  compact = false
 }: SchumannTimelineChartProps) {
   
   const formatDate = (isoStr: string, detailed = false) => {
@@ -109,6 +112,8 @@ export function SchumannTimelineChart({
     return null;
   };
 
+  if (compact) return <CompactSchumannTimeline data={data} loading={loading} error={error} range={range} onRangeChange={onRangeChange} />;
+
   return (
     <div className="min-w-0 space-y-4">
       {onRangeChange && (
@@ -162,7 +167,7 @@ export function SchumannTimelineChart({
         </div>
         
         {loading ? (
-          <div className="h-[400px] w-full flex items-center justify-center bg-surface">
+          <div className="h-[400px] w-full flex items-center justify-center bg-surface" role="status">
             <p className="text-text-muted">Carregando dados observacionais...</p>
           </div>
         ) : error ? (
@@ -176,11 +181,11 @@ export function SchumannTimelineChart({
             <p className="text-text-muted max-w-lg">
               O sistema depende da proveniência validada. Lacunas longas significam ausência de registros disponíveis.
             </p>
-            {onRangeChange && (
-              <p className="text-sm text-text-muted mt-3 max-w-lg">
-                Para procurar registros mais antigos, selecione 90 dias ou 1 ano. A disponibilidade em cada período precisa ser consultada.
-              </p>
-            )}
+            <p className="text-sm text-text-muted mt-3 max-w-lg">A janela consultada não garante cobertura completa.</p>
+            {onRangeChange && range !== '90d' && <button type="button" onClick={() => onRangeChange('90d')}
+              className="mt-4 min-h-11 rounded-lg border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+              Ver 90 dias
+            </button>}
           </div>
         ) : (
           <div className="h-[400px] w-full min-w-0 px-3 py-6 pt-8 sm:px-6 relative" role="img" aria-label={`Gráfico de frequências F1, F2 e F3 com ${data.length} registros históricos. Apenas frequências presentes são desenhadas; lacunas não são interpoladas.`}>

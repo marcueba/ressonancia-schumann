@@ -15,15 +15,15 @@ import { useEffect, useRef, useState } from 'react';
 import { cn } from '../utils/cn';
 
 const navItems = [
-  { path: '/', label: 'Dashboard', icon: Activity },
-  { path: '/atual', label: 'Ressonância Atual', icon: Radio },
-  { path: '/historico', label: 'Histórico', icon: BarChart3 },
+  { path: '/', label: 'Visão geral', icon: Activity },
+  { path: '/atual', label: 'Dados ELF', icon: Radio },
+  { path: '/historico', label: 'Histórico ELF', icon: BarChart3 },
   { path: '/estacoes', label: 'Estações', icon: Globe2 },
-  { path: '/indice', label: 'Índice da Terra (ERI)', icon: Activity },
-  { path: '/geomagnetica', label: 'Ativ. Geomagnética', icon: Compass },
   { path: '/solar', label: 'Atividade Solar', icon: Sun },
+  { path: '/geomagnetica', label: 'Ativ. Geomagnética', icon: Compass },
   { path: '/metodologia', label: 'Metodologia', icon: Database },
   { path: '/artigos', label: 'Artigos', icon: BookOpen },
+  { path: '/indice', label: 'Índice ERI · Experimental', icon: Activity },
 ];
 
 export function Sidebar() {
@@ -62,7 +62,7 @@ export function Sidebar() {
       <div className="lg:hidden min-w-0 flex items-center justify-between gap-3 p-4 bg-surface border-b border-border sticky top-0 z-40">
         <div className="min-w-0 flex items-center gap-2 font-semibold text-text-main tracking-wider">
           <Globe2 className="w-5 h-5 shrink-0 text-primary" />
-          <span className="min-w-0 break-words">RESSONÂNCIA SCHUMANN</span>
+          <span className="min-w-0 break-words text-sm">SCHUMANN <span className="font-normal text-text-muted">/ OBSERVATÓRIO</span></span>
         </div>
         <button ref={menuButtonRef} onClick={toggleSidebar} aria-label={isOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={isOpen} aria-controls="primary-navigation" className="min-h-10 min-w-10 shrink-0 flex items-center justify-center rounded-md text-text-muted hover:text-text-main focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
           {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -90,8 +90,8 @@ export function Sidebar() {
         <div className="p-6 hidden lg:flex items-center gap-3 border-b border-border">
           <Globe2 className="w-6 h-6 text-primary" />
           <div className="flex flex-col">
-            <span className="font-bold text-sm tracking-widest text-text-main leading-tight">RESSONÂNCIA</span>
-            <span className="font-light text-xs tracking-[0.2em] text-text-muted">SCHUMANN</span>
+            <span className="font-medium text-base tracking-[0.12em] text-text-main leading-tight">SCHUMANN</span>
+            <span className="font-light text-[10px] tracking-[0.2em] text-text-muted">OBSERVATÓRIO DA TERRA</span>
           </div>
         </div>
 
@@ -114,9 +114,9 @@ export function Sidebar() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-border">
+        <div className="p-5 border-t border-border">
           <div className="text-[10px] text-text-muted uppercase tracking-widest text-center">
-            Observatório Digital
+            Ciência · Fontes · Transparência
           </div>
         </div>
       </aside>

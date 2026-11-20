@@ -138,30 +138,44 @@ export async function decodeJpegWhenAvailable(image: Buffer, signal: AbortSignal
 export async function fetchTomskSpectrogram(
   fetchSource: typeof fetch = fetch,
   limits = { timeoutMs: TIMEOUT_MS, maxBytes: MAX_BYTES },
+  externalSignal?: AbortSignal,
 ): Promise<Buffer> {
+  if (externalSignal?.aborted) throw requestCancelled();
   const controller = new AbortController();
   let decoding = false;
-  let timer: ReturnType<typeof setTimeout>;
+  let stop!: (error: SpectrogramError) => void;
   const deadline = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      reject(new SpectrogramError(504, decoding ? 'image_validation_timeout' : 'upstream_timeout',
-        decoding ? 'A validação do espectrograma excedeu o tempo limite.' : 'A fonte do espectrograma excedeu o tempo limite.'));
+    let interrupted = false;
+    stop = error => {
+      if (interrupted) return;
+      interrupted = true;
+      reject(error);
       controller.abort();
-    }, limits.timeoutMs);
+    };
   });
+  // One budget for transport, queue and validation; joining consumers never renew it.
+  const timer = setTimeout(() => stop(new SpectrogramError(504, decoding ? 'image_validation_timeout' : 'upstream_timeout',
+    decoding ? 'A validação do espectrograma excedeu o tempo limite.' : 'A fonte do espectrograma excedeu o tempo limite.')), limits.timeoutMs);
+  const cancelled = () => stop(requestCancelled());
+  externalSignal?.addEventListener('abort', cancelled, { once: true });
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   let complete = false;
   try {
     let response: Response;
     try {
-      response = await Promise.race([fetchSource(TOMSK_URL, {
+      const pendingResponse = Promise.resolve(fetchSource(TOMSK_URL, {
         signal: controller.signal,
         redirect: 'manual',
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; SchumannObservatory/1.1; +https://ressonanciaschumann.com)',
           Accept: 'image/jpeg',
         },
-      }), deadline]);
+      })).then(response => {
+        // Also release a late body from a transport that settles after cancellation.
+        if (controller.signal.aborted) void response.body?.cancel().catch(() => {});
+        return response;
+      });
+      response = await Promise.race([pendingResponse, deadline]);
     } catch (error) {
       if (error instanceof SpectrogramError) throw error;
       throw new SpectrogramError(502, 'upstream_unavailable', 'A fonte do espectrograma está indisponível.');
@@ -170,7 +184,13 @@ export async function fetchTomskSpectrogram(
       void response.body?.cancel().catch(() => {});
       throw new SpectrogramError(502, 'upstream_http_error', 'A fonte do espectrograma retornou uma resposta de erro.');
     }
-    if (response.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'image/jpeg') {
+    const mime = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
+    // This fixed SOS-70 endpoint has been observed sending genuine JPEG bytes
+    // as text/html; charset=UTF-8. Accept that one known header mismatch only
+    // provisionally: the bounded header checks and complete JPEG decode below
+    // still have to succeed before any bytes can be returned. HTML is never
+    // forwarded, and this exception does not apply to BGS or arbitrary URLs.
+    if (mime !== 'image/jpeg' && mime !== 'text/html') {
       void response.body?.cancel().catch(() => {});
       throw new SpectrogramError(502, 'invalid_image', 'A fonte não retornou uma imagem JPEG.');
     }
@@ -195,13 +215,14 @@ export async function fetchTomskSpectrogram(
     complete = true;
     const image = Buffer.concat(chunks, size);
     decoding = true;
-    await Promise.race([decodeJpeg(image, controller.signal), deadline]);
+    await Promise.race([decodeJpegWhenAvailable(image, controller.signal), deadline]);
     return image;
   } catch (error) {
     if (error instanceof SpectrogramError) throw error;
     throw new SpectrogramError(502, 'upstream_unavailable', 'A transferência do espectrograma falhou.');
   } finally {
-    clearTimeout(timer!);
+    clearTimeout(timer);
+    externalSignal?.removeEventListener('abort', cancelled);
     if (!complete) {
       controller.abort();
       void reader?.cancel().catch(() => {});
@@ -209,19 +230,107 @@ export async function fetchTomskSpectrogram(
   }
 }
 
-export const serveTomskSpectrogram: RequestHandler = async (_req, res) => {
-  try {
-    const image = await fetchTomskSpectrogram();
-    res.type('image/jpeg').set('Cache-Control', 'public, max-age=300').send(image);
-  } catch (error) {
-    const known = error instanceof SpectrogramError;
-    const status = known ? error.status : 500;
-    const code = known ? error.code : 'proxy_error';
-    console.warn(`[Spectrogram Proxy] ${code}`);
-    res.status(status).set('Cache-Control', 'no-store').json({
-      available: false,
-      error: code,
-      message: known ? error.message : 'Falha local ao servir o espectrograma.',
-    });
+function requestCancelled() {
+  return new SpectrogramError(499, 'request_cancelled', 'A solicitação da imagem foi cancelada.');
+}
+
+export interface TomskSpectrogramService {
+  getImage(signal?: AbortSignal): Promise<Buffer>;
+}
+
+interface TomskSpectrogramServiceOptions {
+  fetchSource?: typeof fetch;
+  limits?: { timeoutMs: number; maxBytes: number };
+}
+
+/** Only the fixed Tomsk operation is shared, and only until it settles. No byte cache. */
+export function createTomskSpectrogramService(options: TomskSpectrogramServiceOptions = {}): TomskSpectrogramService {
+  type Result = { image: Buffer } | { error: unknown };
+  interface Flight {
+    controller: AbortController;
+    consumers: Set<(result: Result) => void>;
+    settled: boolean;
   }
-};
+  let current: Flight | undefined;
+  const fetchSource = options.fetchSource;
+  const limits = options.limits ? { ...options.limits } : undefined;
+
+  function settle(flight: Flight, result: Result) {
+    flight.settled = true;
+    if (current === flight) current = undefined;
+    for (const deliver of [...flight.consumers]) deliver(result);
+  }
+
+  function start(): Flight {
+    const flight: Flight = { controller: new AbortController(), consumers: new Set(), settled: false };
+    current = flight;
+    // Resolve the default fetch at operation start; dependencies are isolated per service.
+    void fetchTomskSpectrogram(fetchSource, limits, flight.controller.signal).then(
+      image => settle(flight, { image }),
+      error => settle(flight, { error }),
+    );
+    return flight;
+  }
+
+  return {
+    getImage(signal) {
+      if (signal?.aborted) return Promise.reject(requestCancelled());
+      const flight = current ?? start();
+      return new Promise<Buffer>((resolve, reject) => {
+        let finished = false;
+        const deliver = (result: Result) => {
+          if (finished) return;
+          finished = true;
+          signal?.removeEventListener('abort', cancelled);
+          flight.consumers.delete(deliver);
+          if ('error' in result) reject(result.error);
+          else resolve(result.image);
+
+          if (!flight.settled && flight.consumers.size === 0) {
+            // Detach before aborting: a new request must not join abandoned work.
+            if (current === flight) current = undefined;
+            flight.controller.abort();
+          }
+        };
+        const cancelled = () => deliver({ error: requestCancelled() });
+        flight.consumers.add(deliver);
+        signal?.addEventListener('abort', cancelled, { once: true });
+        if (signal?.aborted) cancelled();
+      });
+    },
+  };
+}
+
+const tomskSpectrogramService = createTomskSpectrogramService();
+
+export function createTomskSpectrogramHandler(service: TomskSpectrogramService = tomskSpectrogramService): RequestHandler {
+  return async (req, res) => {
+    const consumer = new AbortController();
+    const disconnected = () => { if (!res.writableEnded) consumer.abort(); };
+    // IncomingMessage.close also fires for a normally completed GET; use response.close.
+    res.once?.('close', disconnected);
+    req.once?.('aborted', disconnected);
+    try {
+      if (req.aborted || res.destroyed || res.writableEnded) consumer.abort();
+      const image = await service.getImage(consumer.signal);
+      if (consumer.signal.aborted || res.destroyed || res.writableEnded) return;
+      res.type('image/jpeg').set('X-Content-Type-Options', 'nosniff').set('Cache-Control', 'public, max-age=300').send(image);
+    } catch (error) {
+      if (consumer.signal.aborted || res.destroyed || res.writableEnded || res.headersSent) return;
+      const known = error instanceof SpectrogramError;
+      const status = known ? error.status : 500;
+      const code = known ? error.code : 'proxy_error';
+      console.warn(`[Spectrogram Proxy] ${code}`);
+      res.status(status).set('Cache-Control', 'no-store').json({
+        available: false,
+        error: code,
+        message: known ? error.message : 'Falha local ao servir o espectrograma.',
+      });
+    } finally {
+      res.off?.('close', disconnected);
+      req.off?.('aborted', disconnected);
+    }
+  };
+}
+
+export const serveTomskSpectrogram = createTomskSpectrogramHandler();
