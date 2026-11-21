@@ -26,13 +26,13 @@ test('sitemap covers only the existing canonical indexable pages, including the 
   assert.doesNotMatch(xml, /<lastmod\b/, 'Do not invent modification dates');
 });
 
-test('HTTP serves the file verbatim from public in development and dist in production', async () => {
+test('HTTP serves the file verbatim from public in development and dist/public in production', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'schumann-sitemap-'));
   const xml = await fs.readFile(source, 'utf8');
-  for (const directory of ['public', 'dist']) await fs.mkdir(path.join(root, directory));
+  for (const directory of ['public', 'dist/public']) await fs.mkdir(path.join(root, directory), { recursive: true });
   await fs.writeFile(path.join(root, 'public/sitemap.xml'), xml);
   const builtXml = xml.replace('</urlset>', '<!-- isolated build fixture -->\n</urlset>');
-  await fs.writeFile(path.join(root, 'dist/sitemap.xml'), builtXml);
+  await fs.writeFile(path.join(root, 'dist/public/sitemap.xml'), builtXml);
   for (const production of [false, true]) {
     const app = express();
     app.get('/sitemap.xml', createSitemapHandler(root, production));
