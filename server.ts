@@ -244,7 +244,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    installStaticPages(app, path.join(process.cwd(), 'dist'), process.env.PRERENDER === 'true');
+    installStaticPages(app, path.join(process.cwd(), 'dist', 'public'), process.env.PRERENDER === 'true');
   }
 
   app.listen(PORT, "0.0.0.0", () => {

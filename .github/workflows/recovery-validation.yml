@@ -77,7 +77,7 @@ jobs:
             '/artigos', '/artigos/o-que-e-ressonancia-schumann', '/artigos/ressonancia-schumann-hoje',
             '/artigos/batimento-cardiaco-da-terra', '/404'];
           for (const route of routes) {
-            const html = readFileSync(route === '/' ? 'dist/index.html' : 'dist' + route + '.html', 'utf8');
+            const html = readFileSync(route === '/' ? 'dist/public/index.html' : 'dist/public' + route + '.html', 'utf8');
             if (route === '/404') assert.match(html, /<meta[^>]+name="robots"[^>]+content="[^"]*noindex/, route);
             else assert.ok(html.includes('href="https://ressonanciaschumann.com' + route + '"'), route);
             const initialMain = html.match(/<main[\s>][\s\S]*?<\/main>/i)?.[0];
@@ -100,6 +100,6 @@ jobs:
         with:
           name: recovery-linux-validation
           path: |
-            dist
+            dist/public
             validation-evidence
           retention-days: 7
