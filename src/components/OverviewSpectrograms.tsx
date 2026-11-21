@@ -7,6 +7,9 @@ import { TomskSpectrogramImage, TomskUpdateNotice, useTomskSpectrogram } from '.
 const CHANNELS: BgsChannel[] = ['north', 'east'];
 const LABELS = { north: 'BGS · Norte', east: 'BGS · Leste' };
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
+const FRAME_GEOMETRY = 'aspect-[3/2] w-full overflow-hidden rounded-md border border-border bg-background/60 sm:aspect-[7/6] sm:max-h-[185px]';
+const FRAME = `block ${FRAME_GEOMETRY}`;
+const FRAME_STATUS = `flex items-center p-3 text-xs leading-relaxed ${FRAME_GEOMETRY}`;
 
 function shortPeriod(period: NonNullable<BgsChannelMetadata['observedPeriod']>) {
   return period.date && /^\d{4}-\d{2}-\d{2}$/.test(period.date)
@@ -29,6 +32,22 @@ export function OverviewSpectrogramsView({ state, imageStates = {}, onImageLoad,
 
   return <div data-overview-spectrograms className="min-w-0 space-y-2">
     <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
+      <figure className="min-w-0 space-y-1.5" data-overview-channel="tomsk">
+        {tomsk.imgUrl
+          ? <TomskSpectrogramImage imgUrl={tomsk.imgUrl} hasError={tomsk.hasError} thumbnailFrameClassName={FRAME} />
+          : <>
+            <p className="text-sm font-medium text-text-main">Tomsk · SOS-70</p>
+            <div data-overview-frame className={`${FRAME_STATUS} ${tomsk.hasError ? 'text-amber-300' : 'text-text-muted'}`} role={tomsk.hasError ? 'alert' : 'status'}>
+              {tomsk.hasError ? 'Espectrograma Tomsk temporariamente indisponível.' : 'Carregando Tomsk…'}
+            </div>
+          </>}
+        <TomskUpdateNotice {...tomsk} />
+        <figcaption className="space-y-1 text-xs leading-snug text-text-muted">
+          <p>Imagem de referência · Horário da imagem não informado.</p>
+          <a href="https://sos70.ru/provider.php?file=shm.jpg" target="_blank" rel="noopener noreferrer" className={`inline-block text-primary underline decoration-primary/40 underline-offset-2 ${FOCUS}`}>Fonte Tomsk / SOS-70</a>
+        </figcaption>
+      </figure>
+
       {CHANNELS.map(id => {
         const channel = state.status === 'ready' ? state.metadata.channels[id] : null;
         const verified = channel && isVerifiedBgsImage(id, channel);
@@ -38,12 +57,14 @@ export function OverviewSpectrogramsView({ state, imageStates = {}, onImageLoad,
             aria-label={`Ampliar esta imagem — ${LABELS[id]}, ${channel.observedPeriod!.label}`}
             className={`block min-w-0 rounded text-text-main ${FOCUS}`}>
             <span className="mb-1.5 flex items-center justify-between gap-2 text-sm font-medium">{LABELS[id]}<Maximize2 className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden="true" /></span>
-            <img key={channel.imageUrl} src={channel.imageUrl!} alt={`Espectrograma de Eskdalemuir / ${LABELS[id]} — ${channel.observedPeriod!.label}`}
-              width={700} height={600} className="block h-auto w-full max-w-full rounded-md border border-border bg-white object-contain sm:max-h-[185px]"
-              onLoad={() => onImageLoad?.(id)} onError={() => onImageError?.(id)} />
+            <span data-overview-frame className={FRAME}>
+              <img key={channel.imageUrl} src={channel.imageUrl!} alt={`Espectrograma de Eskdalemuir / ${LABELS[id]} — ${channel.observedPeriod!.label}`}
+                width={700} height={600} className="block size-full object-contain"
+                onLoad={() => onImageLoad?.(id)} onError={() => onImageError?.(id)} />
+            </span>
           </a> : <>
             <p className="text-sm font-medium text-text-main">{LABELS[id]}</p>
-            <div className="flex min-h-28 items-center rounded-md border border-border bg-background/40 p-3 text-xs leading-relaxed text-text-muted" role={state.status === 'error' || imageState === 'error' ? 'alert' : 'status'}>
+            <div data-overview-frame className={`${FRAME_STATUS} text-text-muted`} role={state.status === 'error' || imageState === 'error' ? 'alert' : 'status'}>
               {state.status === 'loading' ? 'Consultando imagem BGS…' : state.status === 'error' ? 'Falha ao consultar BGS.' : imageState === 'error' ? 'Falha ao carregar esta imagem.' : channel?.error === 'material_unverified' ? 'Novo material BGS aguardando verificação.' : 'Imagem verificada indisponível.'}
             </div>
           </>}
@@ -59,18 +80,6 @@ export function OverviewSpectrogramsView({ state, imageStates = {}, onImageLoad,
           </figcaption>
         </figure>;
       })}
-
-      <figure className="min-w-0 space-y-1.5" data-overview-channel="tomsk">
-        <p className="flex items-center justify-between gap-2 text-sm font-medium text-text-main">Tomsk · SOS-70</p>
-        {tomsk.imgUrl ? <TomskSpectrogramImage imgUrl={tomsk.imgUrl} hasError={tomsk.hasError} compact /> : tomsk.hasError
-          ? <div role="alert" className="flex min-h-28 items-center rounded-md border border-border bg-background/40 p-3 text-xs leading-relaxed text-amber-300">Espectrograma Tomsk temporariamente indisponível.</div>
-          : <p role="status" className="text-xs text-text-muted">Carregando Tomsk…</p>}
-        <TomskUpdateNotice {...tomsk} />
-        <figcaption className="space-y-1 text-xs leading-snug text-text-muted">
-          <p>Imagem de referência · Horário da imagem não informado.</p>
-          <a href="https://sos70.ru/provider.php?file=shm.jpg" target="_blank" rel="noopener noreferrer" className={`inline-block text-primary underline decoration-primary/40 underline-offset-2 ${FOCUS}`}>Fonte Tomsk / SOS-70</a>
-        </figcaption>
-      </figure>
     </div>
 
     <div className="space-y-1 border-t border-border pt-2 text-xs leading-snug text-text-muted">
