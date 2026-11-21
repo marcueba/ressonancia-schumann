@@ -30,6 +30,10 @@ test('overview simultaneously presents two verified BGS images and panoramic Tom
   const data = metadata();
   const html = render({ status: 'ready', metadata: data });
   assert.equal((html.match(/<img /g) ?? []).length, 3);
+  assert.deepEqual([...html.matchAll(/data-overview-channel="([^"]+)"/g)].map(match => match[1]), ['tomsk', 'north', 'east']);
+  const frames = [...html.matchAll(/data-overview-frame="true" class="([^"]+)"/g)].map(match => match[1]);
+  assert.equal(frames.length, 3);
+  assert.ok(frames.every(frame => frame === frames[0]));
   for (const id of ['north', 'east'] as const) {
     const figure = new RegExp(`<figure[^>]*data-overview-channel="${id}"[^>]*>(.*?)</figure>`).exec(html)![1];
     const src = /<img[^>]*src="([^"]+)"/.exec(figure)![1];
@@ -44,6 +48,7 @@ test('overview simultaneously presents two verified BGS images and panoramic Tom
   assert.match(html, /Horário da imagem não informado/);
   const tomsk = /<button[^>]*aria-label="Ampliar esta imagem — Tomsk \/ SOS-70"[^>]*>(.*?)<\/button>/.exec(html)![1];
   assert.match(tomsk, /src="\/api\/spectrogram\/tomsk\?t=123"/);
+  assert.match(tomsk, /object-contain/);
   assert.match(html, /<dialog[^>]*aria-label="Ampliação do espectrograma Tomsk \/ SOS-70"/);
   assert.match(html, /Novas imagens dependem de verificação humana/);
   assert.match(html, /As imagens BGS não alimentam as frequências derivadas/);
@@ -70,6 +75,7 @@ test('overview retains verification gates and independent channel/source failure
   assert.match(bgsFailure, /src="\/api\/spectrogram\/tomsk/);
   const tomskFailure = render({ status: 'ready', metadata: metadata() }, undefined, true);
   assert.match(tomskFailure, /Tomsk temporariamente indisponível/);
+  assert.equal((tomskFailure.match(/data-overview-frame=/g) ?? []).length, 3);
   assert.match(tomskFailure, /src="\/api\/bgs\/spectrograms\/north\//);
   assert.doesNotMatch(tomskFailure, /src="\/api\/spectrogram\/tomsk/);
 });

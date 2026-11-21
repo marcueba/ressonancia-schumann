@@ -28,20 +28,28 @@ export function useTomskSpectrogram() {
   return { ...snapshot, retry: () => { void session.current?.refresh(true); } };
 }
 
-export function TomskSpectrogramImage({ imgUrl, hasError, compact = false }: Pick<TomskSnapshotState, 'imgUrl' | 'hasError'> & { compact?: boolean }) {
+export function TomskSpectrogramImage({ imgUrl, hasError, thumbnailFrameClassName }: Pick<TomskSnapshotState, 'imgUrl' | 'hasError'> & { thumbnailFrameClassName?: string }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [expanded, setExpanded] = useState(false);
+  const image = <img key={imgUrl} src={imgUrl} alt={IMAGE_DESCRIPTION} data-tomsk-image
+    className={thumbnailFrameClassName ? 'block size-full object-contain' : 'block h-auto max-w-full rounded-md object-contain'} />;
 
   return <>
     <button type="button" aria-label="Ampliar esta imagem — Tomsk / SOS-70" aria-haspopup="dialog"
-      className={`relative flex max-w-full cursor-zoom-in items-center justify-center rounded-md ${FOCUS} ${compact ? 'min-h-20 w-full border border-border bg-black' : ''}`}
+      className={`cursor-zoom-in rounded-md ${FOCUS} ${thumbnailFrameClassName ? 'block w-full min-w-0 text-left text-text-main' : 'relative flex max-w-full items-center justify-center'}`}
       onClick={() => {
         dialog.current?.showModal();
         setExpanded(true);
       }}>
-      <img key={imgUrl} src={imgUrl} alt={IMAGE_DESCRIPTION} data-tomsk-image
-        className={`block h-auto max-w-full rounded-md object-contain ${compact ? 'w-full' : ''}`} />
-      <Maximize2 className="absolute right-1.5 top-1.5 h-3.5 w-3.5 text-white" aria-hidden="true" />
+      {thumbnailFrameClassName ? <>
+        <span className="mb-1.5 flex items-center justify-between gap-2 text-sm font-medium">
+          Tomsk · SOS-70<Maximize2 className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden="true" />
+        </span>
+        <span data-overview-frame className={thumbnailFrameClassName}>{image}</span>
+      </> : <>
+        {image}
+        <Maximize2 className="absolute right-1.5 top-1.5 h-3.5 w-3.5 text-white" aria-hidden="true" />
+      </>}
     </button>
     <dialog ref={dialog} onClose={() => setExpanded(false)} aria-label="Ampliação do espectrograma Tomsk / SOS-70"
       className="m-auto max-h-[90dvh] w-[92vw] max-w-6xl rounded-lg border border-border bg-surface p-3 text-text-main backdrop:bg-black/80">
