@@ -81,7 +81,7 @@ export function Geomagnetic() {
                 className="flex-1 flex flex-col items-center justify-end h-full group relative"
               >
                 {/* Tooltip Visual Customizado */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full mb-2 bg-surface border border-border p-3 rounded-md shadow-lg text-xs z-10 w-max pointer-events-none text-center flex flex-col gap-1 left-1/2 -translate-x-1/2">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full mb-2 bg-surface border border-border p-3 rounded-md shadow-lg text-xs z-10 w-max pointer-events-none text-center flex flex-col gap-1 left-1/2 -translate-x-1/2 group-first:left-0 group-first:translate-x-0 group-last:left-auto group-last:right-0 group-last:translate-x-0">
                   <div className="font-medium text-text-main">Horário: {timeStr} UTC</div>
                   <div className="text-text-muted">Kp: <span className="font-medium text-text-main">{item.kp}</span></div>
                   <div className="text-[10px] text-text-muted/60 mt-1 uppercase tracking-wider">Fonte: NOAA SWPC</div>

@@ -32,8 +32,6 @@ export function CurrentResonance() {
       });
   }, []);
 
-  if (loading) return <div className="p-8 text-center text-text-muted">Carregando dados...</div>;
-
   const availability = schumannAvailability(data);
   const observedModes = availability === 'unavailable' ? [] : [
     { name: 'F1 (Fundamental)', mode: data?.fundamental },
@@ -51,21 +49,25 @@ export function CurrentResonance() {
   ];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-light tracking-wide text-text-main mb-2">Painel Observacional</h1>
-          <p className="text-text-muted max-w-3xl leading-relaxed">
-            Monitoramento derivado da atividade eletromagnética ELF associada às Ressonâncias de Schumann.
-          </p>
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="observatory-hero rounded-2xl border border-border p-6 sm:p-9">
+        <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">Campo ELF · Estações e proveniência</p>
+            <h1 className="text-3xl font-light tracking-tight text-text-main sm:text-4xl">Dados ELF e espectrogramas</h1>
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-text-muted sm:text-base">
+              Observe as frequências derivadas e os espectrogramas instrumentais de forma separada. Estações distintas não devem ser combinadas como se representassem uma única medição.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsShareModalOpen(true)}
+            className="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+          >
+            <Share2 className="h-4 w-4" aria-hidden="true" />
+            <span>Criar Share Card</span>
+          </button>
         </div>
-        <button 
-          onClick={() => setIsShareModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-surface border border-border hover:border-gold/50 text-gold text-sm font-medium rounded-lg transition-colors uppercase tracking-widest whitespace-nowrap"
-        >
-          <Share2 className="w-4 h-4" />
-          <span>Criar Share Card</span>
-        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -73,11 +75,13 @@ export function CurrentResonance() {
           <CardHeader>
             <CardTitle as="h2" className="flex items-center gap-2">
               <Activity className="w-5 h-5" />
-              {schumannStatus(data)}
+              {loading ? 'Consultando frequências derivadas...' : schumannStatus(data)}
             </CardTitle>
           </CardHeader>
           <div className="space-y-4">
-            {observedModes.length > 0 ? (
+            {loading ? (
+              <div role="status" className="py-4 text-sm text-text-muted">Consultando a fonte secundária. O painel BGS é independente desta leitura.</div>
+            ) : observedModes.length > 0 ? (
               observedModes.map((mode, i) => (
                 <div key={i} className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0">
                   <div>
@@ -95,7 +99,7 @@ export function CurrentResonance() {
             {data && (
               <div className="pt-4 border-t border-border/50 text-xs text-text-muted flex flex-col gap-2 sm:flex-row sm:justify-between">
                 <SchumannTimes data={data} zone="UTC" />
-                <span>Estação: {data.source || 'Tomsk'}</span>
+                <span>Estação: {data.source || 'Não informada'}</span>
               </div>
             )}
           </div>
@@ -117,7 +121,10 @@ export function CurrentResonance() {
         </Card>
       </div>
       
-      <div className="mt-6">
+      <BgsSpectrogramPanel />
+
+      <div className="border-t border-border pt-7">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Fonte secundária · Tomsk / SOS-70</p>
           <SchumannSpectrogramPanel 
             currentF1={data?.fundamental?.frequency}
             currentF2={data?.mode2?.frequency}
@@ -127,8 +134,6 @@ export function CurrentResonance() {
             historical={data?.is_historical}
           />
         </div>
-      
-      <BgsSpectrogramPanel />
 
       {data && data.derived_from_image && (
         <Card className="mt-6 bg-surface/50 border-primary/20">

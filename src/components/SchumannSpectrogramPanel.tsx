@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
 import { Card } from './ui/Card';
 import { AlertCircle, ImageOff, ExternalLink } from 'lucide-react';
 import { formatObservationTime } from '../utils/observationTime';
 import { displayFrequency } from '../utils/schumannState';
 import { getSchumannAvailability } from '../../shared/schumann';
+import { TomskSpectrogramImage, TomskUpdateNotice, useTomskSpectrogram } from './TomskSpectrogram';
 
 interface SchumannSpectrogramPanelProps {
   currentF1?: number | null;
@@ -15,41 +15,13 @@ interface SchumannSpectrogramPanelProps {
 }
 
 export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, timestamp, sourceUpdatedAt, historical }: SchumannSpectrogramPanelProps) {
-  const [imgUrl, setImgUrl] = useState<string>('');
-  const [hasError, setHasError] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  // We use our local proxy to avoid CORS/CORB issues and ensure image/jpeg content-type.
-  // We append a timestamp rounded to 5 minutes to bust browser cache gracefully.
-  useEffect(() => {
-    const fetchImage = () => {
-      const timeBucket = Math.floor(Date.now() / (1000 * 300)); // 5 minutes bucket
-      setImgUrl(`/api/spectrogram/tomsk?t=${timeBucket}`);
-      setHasError(false);
-      setLoading(true);
-    };
-    
-    fetchImage();
-    
-    // Refresh a cada 5 minutos
-    const interval = setInterval(fetchImage, 300000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleImageError = () => {
-    setHasError(true);
-    setLoading(false);
-  };
-
-  const handleImageLoad = () => {
-    setLoading(false);
-  };
+  const tomsk = useTomskSpectrogram();
 
   const timeStr = formatObservationTime(timestamp, 'America/Sao_Paulo');
   const hasFrequencies = getSchumannAvailability([currentF1, currentF2, currentF3]) !== 'unavailable';
 
   return (
-    <Card className="min-w-0 overflow-hidden p-0 border border-border bg-background [overflow-wrap:anywhere]">
+    <Card data-tomsk-spectrogram className="min-w-0 overflow-hidden p-0 border border-border bg-background [overflow-wrap:anywhere]">
       <div className="min-w-0 p-4 border-b border-border bg-surface flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="min-w-0">
           <h2 className="min-w-0 break-words text-xl font-medium tracking-wide text-text-main">ESPECTROGRAMA DE REFERÊNCIA</h2>
@@ -70,29 +42,20 @@ export function SchumannSpectrogramPanel({ currentF1, currentF2, currentF3, time
 
       <div className="flex flex-col lg:flex-row">
         {/* Painel da Imagem */}
-        <div className="relative flex-1 bg-black min-h-[300px] flex items-center justify-center p-2 border-b lg:border-b-0 lg:border-r border-border">
-          {loading && !hasError && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-10">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mb-2"></div>
+        <div className="flex min-h-[300px] min-w-0 flex-1 flex-col items-center justify-center gap-2 border-b border-border bg-black p-2 lg:border-b-0 lg:border-r">
+          {tomsk.imgUrl ? <TomskSpectrogramImage imgUrl={tomsk.imgUrl} hasError={tomsk.hasError} /> : tomsk.hasError ? (
+            <div role="alert" className="flex flex-col items-center justify-center p-8 text-center text-text-muted">
+              <ImageOff size={48} className="mb-4 opacity-50" />
+              <p className="text-sm font-medium">Espectrograma temporariamente indisponível.</p>
+              <p className="mt-2 max-w-xs text-xs">Não foi possível carregar a imagem. Os valores numéricos são consultados separadamente.</p>
+            </div>
+          ) : (
+            <div role="status" className="flex flex-col items-center justify-center">
+              <div className="mb-2 h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-primary" aria-hidden="true" />
               <span className="text-xs text-text-muted">Carregando espectrograma...</span>
             </div>
           )}
-          
-          {hasError ? (
-            <div className="flex flex-col items-center justify-center text-text-muted p-8 text-center">
-              <ImageOff size={48} className="mb-4 opacity-50" />
-              <p className="text-sm font-medium">Espectrograma temporariamente indisponível.</p>
-              <p className="text-xs mt-2 max-w-xs">Não foi possível carregar a imagem. Os valores numéricos são consultados separadamente.</p>
-            </div>
-          ) : (
-            <img 
-              src={imgUrl}
-              alt="Espectrograma ELF de referência da estação Tomsk / SOS-70"
-              className={`max-w-full h-auto object-contain transition-opacity duration-500 ${loading ? 'opacity-0' : 'opacity-100'}`}
-              onError={handleImageError}
-              onLoad={handleImageLoad}
-            />
-          )}
+          <TomskUpdateNotice {...tomsk} />
         </div>
 
         {/* Painel de Contexto */}

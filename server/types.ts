@@ -78,6 +78,12 @@ export interface NoaaGoesXray {
   energy: string;
 }
 
+/** One reported NOAA RTSW observation. Missing minutes are represented as null. */
+export interface SolarTrendPoint {
+  timestamp: string;
+  value: number | null;
+}
+
 export interface SolarData {
   solarFlux: number | null;
   /** Legacy name: count of regions with reported spots in the identified dated product, not individual spots. */
@@ -93,6 +99,8 @@ export interface SolarData {
   imfTimestamp?: string | null;
   currentXRay?: CurrentXRay | null;
   xrayHistory?: XRayDataPoint[];
+  solarWindHistory?: SolarTrendPoint[];
+  bzHistory?: SolarTrendPoint[];
   solarFluxTimestamp?: string | null;
   productErrors?: Record<string, string>;
   /** Per-field times; legacy solarWindTimestamp follows speed and imfTimestamp follows Bz. */

@@ -22,8 +22,8 @@ export interface BgsChannelMetadata {
   sha256: string | null;
   imageOrigin: 'archive' | 'remote' | null;
   fetchedAt: string | null;
-  checkedAt: string;
-  nextCheckAt: string;
+  checkedAt: string | null;
+  nextCheckAt: string | null;
   cacheState: 'fresh' | 'cached' | 'stale' | 'unavailable';
   observedPeriod: BgsObservedPeriod | null;
   credit: string | null;

@@ -25,7 +25,7 @@ export interface HistoryPeriodState {
 
 export function historyRangeFromSearch(search: string): Range {
   const value = new URLSearchParams(search).get('range');
-  return value && Object.hasOwn(RANGE_MS, value) ? value as Range : '24h';
+  return value && Object.hasOwn(RANGE_MS, value) ? value as Range : '90d';
 }
 
 function recordTime(record: unknown): number | null {

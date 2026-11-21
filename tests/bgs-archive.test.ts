@@ -14,7 +14,7 @@ const fixed = { north: 'north-channel1.jpg', east: 'east-channel2.jpg' } as cons
 const hash = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
 const now = Date.parse('2030-01-01T12:00:00Z');
 const day = 86_400_000;
-const period: BgsObservedPeriod = { label: '05/11/2026 (data inscrita na imagem)', date: '2026-11-05', year: 2026, basis: 'image_verified_by_sha256' };
+const period: BgsObservedPeriod = { label: '14/11/2026 (data inscrita na imagem)', date: '2026-11-14', year: 2026, basis: 'image_verified_by_sha256' };
 const page = Object.entries(BGS_ORIGINAL_URLS).map(([channel, url]) => `<a href="${url}" title="Channel ${channel === 'north' ? '1 North' : '2 East'}">Daily spectrogram</a>`).join('');
 const jpeg = (bytes: Buffer) => new Response(bytes, { headers: { 'Content-Type': 'image/jpeg' } });
 const html = () => new Response(page, { headers: { 'Content-Type': 'text/html' } });
@@ -150,4 +150,26 @@ test('approved archive stays content-addressable after newer approved remote ver
   assert.equal(await service.getImage('north', hash(versions[0])), null, 'older remote versions remain evicted, rather than growing the cache');
   assert.deepEqual(await service.getImage('north', hash(versions[1])), versions[1]);
   assert.deepEqual(await service.getImage('north', hash(versions[2])), versions[2]);
+});
+
+test('archive-only BGS serves the approved originals without querying or scheduling the origin', async () => {
+  let calls = 0;
+  const service = createBgsSpectrogramService({ archiveDir, checkOrigin: false, now: () => now,
+    fetchSource: (async () => { calls++; throw new Error('Origin must stay disabled'); }) as typeof fetch });
+  for (let read = 0; read < 2; read++) {
+    const metadata = await service.getMetadata();
+    for (const channel of ['north', 'east'] as const) {
+      const item = metadata.channels[channel];
+      const original = await readFile(path.join(archiveDir, fixed[channel]));
+      assert.equal(item.imageOrigin, 'archive');
+      assert.equal(item.checkedAt, null);
+      assert.equal(item.nextCheckAt, null);
+      assert.equal(item.fetchedAt, null);
+      assert.equal(item.error, null);
+      assert.equal(item.sha256, hash(original));
+      assert.deepEqual(item.observedPeriod, period);
+      assert.deepEqual(await service.getImage(channel, item.sha256!), original);
+    }
+  }
+  assert.equal(calls, 0);
 });

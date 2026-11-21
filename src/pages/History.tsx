@@ -14,39 +14,42 @@ export function HistoryPage() {
   const navigationType = useNavigationType();
   const [, setSearchParams] = useSearchParams();
   const range = historyRangeFromSearch(location.search);
-  const [data, setData] = useState<HistoricalDataPoint[]>(() => historyRecordsFromNavigation(location.search, location.state, navigationType) ?? []);
-  const [loading, setLoading] = useState(() => historyRecordsFromNavigation(location.search, location.state, navigationType) === null);
-  const [error, setError] = useState(false);
+  // A browser back/forward action changes the URL before its effect runs.
+  // Keep the result tied to that navigation so an old period's rows/statistics
+  // cannot appear under the new period's selected button and heading.
+  const [result, setResult] = useState(() => {
+    const transferred = historyRecordsFromNavigation(location.search, location.state, navigationType);
+    return { key: location.key, data: transferred ?? [] as HistoricalDataPoint[], loading: transferred === null, error: false };
+  });
+  const matchingResult = result.key === location.key;
+  const data = matchingResult ? result.data : [];
+  const loading = !matchingResult || result.loading;
+  const error = matchingResult && result.error;
 
   useEffect(() => {
     let active = true;
     const transferred = historyRecordsFromNavigation(location.search, location.state, navigationType);
     if (transferred) {
-      setData(transferred);
-      setLoading(false);
-      setError(false);
+      setResult({ key: location.key, data: transferred, loading: false, error: false });
       return () => { active = false; };
     }
-    setLoading(true);
-    setError(false);
+    setResult({ key: location.key, data: [], loading: true, error: false });
     dataProvider.getHistoricalData(range)
       .then(res => {
         if (!active) return;
-        setData(res);
-        setLoading(false);
+        setResult({ key: location.key, data: res, loading: false, error: false });
       })
       .catch(err => {
         if (!active) return;
         console.error(err);
-        setError(true);
-        setLoading(false);
+        setResult({ key: location.key, data: [], loading: false, error: true });
       });
     return () => { active = false; };
   }, [location.key, location.search, location.state, navigationType, range]);
 
   function selectRange(value: Range) {
     if (value === range) return;
-    setLoading(true);
+    setResult(previous => ({ ...previous, loading: true, error: false }));
     setSearchParams(previous => {
       previous.set('range', value);
       return previous;
