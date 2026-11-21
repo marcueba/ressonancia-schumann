@@ -8,6 +8,7 @@ import * as dotenv from 'dotenv';
 import { tomskProvider } from "./server/providers/SchumannProviders";
 import { noaaProvider } from "./server/providers/NoaaProvider";
 import { installStaticPages } from "./server/services/static-pages";
+import { sendHealth } from './server/services/healthz.mjs';
 import { getERIState } from "./server/services/eri";
 import { createHistoryHandler } from "./server/services/history";
 import { serveTomskSpectrogram } from "./server/services/spectrogram";
@@ -61,6 +62,10 @@ async function startServer() {
   app.use((req, res, next) => {
     res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
     next();
+  });
+
+  app.get('/healthz', (req, res, next) => {
+    if (!sendHealth(req, res)) next();
   });
 
   app.use('/api', (req, res, next) => {

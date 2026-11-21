@@ -10,7 +10,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "collect:schumann": "bun run server/jobs/collect-schumann.ts",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts scripts/monitoramento/*.test.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

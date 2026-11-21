@@ -22,9 +22,9 @@ const publicFiles = ['favicon.svg', 'og-article-1.jpg', 'og-article-2.jpg', 'og-
 const manifest = require('../server/assets/bgs/manifest.json');
 
 // node:http preserves the path passed to the loopback server verbatim.
-function readArtifact(pathname, method = 'GET') {
+function readArtifact(pathname, method = 'GET', headers = {}) {
   return new Promise((resolve, reject) => {
-    const req = request({ hostname: '127.0.0.1', port, path: pathname, method, signal: AbortSignal.timeout(5000) }, response => {
+    const req = request({ hostname: '127.0.0.1', port, path: pathname, method, headers, signal: AbortSignal.timeout(5000) }, response => {
       const chunks = [];
       response.on('data', chunk => chunks.push(chunk));
       response.on('error', reject);
@@ -35,13 +35,28 @@ function readArtifact(pathname, method = 'GET') {
   });
 }
 
+async function checkHealthEndpoint() {
+  const body = Buffer.from('{"status":"ok"}');
+  for (const method of ['GET', 'HEAD']) {
+    const response = await readArtifact('/healthz', method, { 'If-None-Match': '*' });
+    assert.equal(response.status, 200, method);
+    assert.equal(response.headers['cache-control'], 'no-store', method);
+    assert.equal(response.headers['content-type'], 'application/json; charset=utf-8', method);
+    assert.equal(response.headers['x-content-type-options'], 'nosniff', method);
+    assert.equal(Number(response.headers['content-length']), body.length, method);
+    assert.ok(response.body.equals(method === 'GET' ? body : Buffer.alloc(0)), method);
+  }
+  console.log('GET and HEAD /healthz returned 200 JSON with no-store and external fetch blocked.');
+}
+
 async function checkPublicArtifact() {
   const builtNotFound = fs.readFileSync(path.join(publicRoot, '404.html'));
   const privatePaths = ['/server.cjs', '/server.cjs.map', '/%73erver.cjs', '/server.cjs%2emap',
     '/server.cjs?check=1', '/dist/server.cjs', '/dist/server.cjs.map', '/assets/server.cjs',
     '/%2e%2e/server.cjs', '/assets/%2e%2e/%2e%2e/server.cjs.map', '/%252e%252e/server.cjs',
     '/assets/server.cjs.map', '/.env', '/.env.example', '/package.json', '/bun.lock',
-    '/vite.config.ts', '/server.ts', '/scripts/prerender.cjs', '/bgs-archive/manifest.json',
+    '/vite.config.ts', '/server.ts', '/scripts/prerender.cjs', '/scripts/monitoramento/monitor.mjs',
+    '/server/services/healthz.mjs', '/bgs-archive/manifest.json',
     ...manifest.images.map(image => '/bgs-archive/' + image.file)];
   for (const method of ['GET', 'HEAD']) {
     for (const route of privatePaths) {
@@ -141,7 +156,11 @@ async function checkOverviewBgsLinks(page) {
   assert.equal(fs.existsSync(path.join(root, '.env')), false, 'Run validation in an isolated checkout without .env');
   fs.mkdirSync(evidence, { recursive: true });
   let browser;
-  const server = spawn(process.execPath, ['dist/server.cjs'], {
+  let unexpectedReads = false;
+  const fetchMarker = 'Unexpected fetch in artifact server';
+  const blockFetch = `globalThis.fetch = () => { process.stderr.write('${fetchMarker}'); throw new Error('External fetch blocked'); };`;
+  const preload = 'data:text/javascript,' + encodeURIComponent(blockFetch);
+  const server = spawn(process.execPath, ['--import', preload, 'dist/server.cjs'], {
     cwd: root,
     env: { PATH: process.env.PATH, HOME: process.env.HOME, NODE_ENV: 'production', DATA_MODE: 'live', PORT: String(port) },
   });
@@ -152,10 +171,14 @@ async function checkOverviewBgsLinks(page) {
         process.stdout.write(data);
         if (String(data).includes('Server running')) { clearTimeout(timer); resolve(); }
       });
-      server.stderr.on('data', data => process.stderr.write(data));
+      server.stderr.on('data', data => {
+        if (String(data).includes(fetchMarker)) unexpectedReads = true;
+        process.stderr.write(data);
+      });
       server.once('error', error => { clearTimeout(timer); reject(error); });
       server.once('exit', code => { clearTimeout(timer); reject(new Error(`Server exit ${code}`)); });
     });
+    await checkHealthEndpoint();
     await checkPublicArtifact();
     await checkBgsArchive();
     const eri = await fetch(base + '/api/eri');
@@ -223,6 +246,7 @@ async function checkOverviewBgsLinks(page) {
       }
       await page.close();
     }
+    assert.equal(unexpectedReads, false, 'Artifact server attempted to fetch an external dependency');
     console.log('Artifact validation passed; no production credentials or collection used.');
   } finally {
     if (browser) await browser.close();
