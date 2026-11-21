@@ -149,7 +149,7 @@ async function startServer() {
 
     console.log('Starting Puppeteer...');
     browser = await puppeteer.launch(browserConfig);
-    const distDir = path.join(__dirname, '../dist');
+    const publicDir = path.join(projectRoot, 'dist', 'public');
     const origin = `http://localhost:${PORT}`;
 
     for (const route of ROUTES) {
@@ -197,7 +197,7 @@ async function startServer() {
         if (unexpectedReads.size) throw new Error(`Unexpected live reads: ${[...unexpectedReads].join(', ')}`);
 
         let fileName = route === '/' ? 'index.html' : `${route.substring(1)}.html`;
-        const filePath = path.join(distDir, fileName);
+        const filePath = path.join(publicDir, fileName);
 
         const dir = path.dirname(filePath);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
