@@ -7,7 +7,7 @@ import { TomskSpectrogramImage, TomskUpdateNotice, useTomskSpectrogram } from '.
 const CHANNELS: BgsChannel[] = ['north', 'east'];
 const LABELS = { north: 'BGS · Norte', east: 'BGS · Leste' };
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
-const FRAME_GEOMETRY = 'aspect-[3/2] w-full overflow-hidden rounded-md border border-border bg-background/60 sm:aspect-[7/6] sm:max-h-[185px]';
+const FRAME_GEOMETRY = 'w-full overflow-hidden rounded-md border border-border bg-background/60';
 const FRAME = `block ${FRAME_GEOMETRY}`;
 const FRAME_STATUS = `flex items-center p-3 text-xs leading-relaxed ${FRAME_GEOMETRY}`;
 
@@ -31,7 +31,7 @@ export function OverviewSpectrogramsView({ state, imageStates = {}, onImageLoad,
     : [];
 
   return <div data-overview-spectrograms className="min-w-0 space-y-2">
-    <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
+    <div data-overview-tiles className="grid min-w-0">
       <figure className="min-w-0 space-y-1.5" data-overview-channel="tomsk">
         {tomsk.imgUrl
           ? <TomskSpectrogramImage imgUrl={tomsk.imgUrl} hasError={tomsk.hasError} thumbnailFrameClassName={FRAME} />

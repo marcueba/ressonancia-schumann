@@ -33,7 +33,8 @@ test('overview simultaneously presents two verified BGS images and panoramic Tom
   assert.deepEqual([...html.matchAll(/data-overview-channel="([^"]+)"/g)].map(match => match[1]), ['tomsk', 'north', 'east']);
   const frames = [...html.matchAll(/data-overview-frame="true" class="([^"]+)"/g)].map(match => match[1]);
   assert.equal(frames.length, 3);
-  assert.ok(frames.every(frame => frame === frames[0]));
+  assert.match(html, /data-overview-tiles="true"/);
+  assert.doesNotMatch(html, /data-tomsk-layout|Comparar a legibilidade do Tomsk|[?&]tomsk=/);
   for (const id of ['north', 'east'] as const) {
     const figure = new RegExp(`<figure[^>]*data-overview-channel="${id}"[^>]*>(.*?)</figure>`).exec(html)![1];
     const src = /<img[^>]*src="([^"]+)"/.exec(figure)![1];
